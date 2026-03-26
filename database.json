@@ -10,7 +10,9 @@
           "6184690942": "mex",
           "7727226054": "ikkiy"
         },
-        "allowed_users": {},
+        "allowed_users": {
+          "7575995144": "kingzaav2"
+        },
         "delete_on": false
       },
       "-1002160407774": {
@@ -19,6 +21,36 @@
         "delete_on": false
       },
       "-1002147851861": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002150715376": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002155879392": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002427390610": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002224990727": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002332152266": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002566330478": {
         "targets": {},
         "allowed_users": {},
         "delete_on": false
