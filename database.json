@@ -3,7 +3,8 @@
     "groups": {
       "-1002499926926": {
         "targets": {
-          "7631201681": "jikta"
+          "7631201681": "jikta",
+          "8454029535": "ketua"
         },
         "allowed_users": {},
         "delete_on": false
