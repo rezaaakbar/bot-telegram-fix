@@ -13,7 +13,7 @@
         "allowed_users": {
           "7575995144": "kingzaav2"
         },
-        "delete_on": false
+        "delete_on": true
       },
       "-1002160407774": {
         "targets": {},
@@ -51,6 +51,21 @@
         "delete_on": false
       },
       "-1002566330478": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002317186307": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002192994551": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002149492018": {
         "targets": {},
         "allowed_users": {},
         "delete_on": false
