@@ -1,5 +1,23 @@
 {
   "data": {
-    "groups": {}
+    "groups": {
+      "-1002499926926": {
+        "targets": {
+          "7631201681": "jikta"
+        },
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002160407774": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002147851861": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      }
+    }
   }
 }
