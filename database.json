@@ -5,7 +5,8 @@
         "targets": {
           "7631201681": "jikta",
           "8454029535": "ketua",
-          "366851946": "ryuu"
+          "366851946": "ryuu",
+          "6844594426": "sanz"
         },
         "allowed_users": {},
         "delete_on": false
@@ -16,11 +17,6 @@
         "delete_on": false
       },
       "-1002147851861": {
-        "targets": {},
-        "allowed_users": {},
-        "delete_on": false
-      },
-      "-1002427390610": {
         "targets": {},
         "allowed_users": {},
         "delete_on": false
