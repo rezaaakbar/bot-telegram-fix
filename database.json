@@ -25,7 +25,7 @@
           "6184690942": "MEXX"
         },
         "allowed_users": {},
-        "delete_on": false
+        "delete_on": true
       },
       "-1002224990727": {
         "targets": {},
