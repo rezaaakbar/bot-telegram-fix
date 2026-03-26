@@ -3,7 +3,7 @@ import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = os.getenv("7506774072:AAF0f7FYsk0i7J_cElq-RjoBTEv7Jw7okhE")
+TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = 6818257079
 OWNER_USERNAME = "@KINGZAAASLI"
 
