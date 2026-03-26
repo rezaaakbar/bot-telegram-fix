@@ -1,6 +1,29 @@
 {
   "data": {
-    "groups": {}
+    "groups": {
+      "-1002147851861": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002192994551": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002160407774": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002499926926": {
+        "targets": {
+          "8454029535": "UCIL 5+ C BIO"
+        },
+        "allowed_users": {},
+        "delete_on": false
+      }
+    }
   },
   "user_group_map": {}
 }
