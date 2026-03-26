@@ -3,13 +3,13 @@ import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-================= CONFIG =================
+#================= CONFIG =================
 
 TOKEN = "7506774072:AAF0f7FYsk0i7J_cElq-RjoBTEv7Jw7okhE"
 OWNER_ID = 6818257079
 OWNER_USERNAME = "@KINGZAAASLI"
 
-================= DATABASE =================
+#================= DATABASE =================
 
 data = {"groups": {}}
 user_group_map = {}
@@ -48,7 +48,7 @@ return user_id == OWNER_ID
 def is_user(user_id, chat_id, group):
 return user_id in group["users"] and user_group_map.get(str(user_id)) == str(chat_id)
 
-================= COMMAND =================
+#================= COMMAND =================
 
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 user_id = update.effective_user.id
@@ -143,7 +143,7 @@ elif mode == "off":
     save_data()  
     await update.message.reply_text("𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
 
-================= OWNER ONLY =================
+#================= OWNER ONLY =================
 
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 user_id = update.effective_user.id
@@ -212,7 +212,7 @@ for i, uid in enumerate(group["users"], 1):
 
 await update.message.reply_text(text)
 
-================= AUTO DELETE =================
+#================= AUTO DELETE =================
 
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 message = update.message
@@ -229,7 +229,7 @@ if group["enabled"] and user_id in group["targets"]:
     except:  
         pass
 
-================= MAIN =================
+#================= MAIN =================
 
 load_data()
 
