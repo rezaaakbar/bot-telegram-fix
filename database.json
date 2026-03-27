@@ -15,7 +15,7 @@
         "allowed_users": {
           "7575995144": "kingzaav2"
         },
-        "delete_on": false
+        "delete_on": true
       },
       "-1002160407774": {
         "targets": {},
