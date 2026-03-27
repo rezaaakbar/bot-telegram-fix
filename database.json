@@ -62,9 +62,7 @@
         "delete_on": false
       },
       "-1002192994551": {
-        "targets": {
-          "7148807549": "asissamra"
-        },
+        "targets": {},
         "allowed_users": {},
         "delete_on": false
       },
