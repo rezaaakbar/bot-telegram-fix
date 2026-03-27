@@ -15,15 +15,24 @@ REPO_NAME = os.getenv("REPO_NAME")
 FILE_PATH = os.getenv("FILE_PATH", "database.json")
 
 data = {"groups": {}}
+user_group_name = {}
 
 # ================= WORD SYSTEM =================
 word_data = {}
 last_reset_date = datetime.now().date()
 
+def check_reset():
+    global word_data, last_reset_date
+    now = datetime.now().date()
+    if now != last_reset_date:
+        word_data = {}
+        last_reset_date = now
+        print("RESET 00:00")
+
 # ================= DATABASE =================
 
 def load_data():
-    global data
+    global data, user_group_name
     try:
         url = f"https://api.github.com/repos/{REPO_NAME}/contents/{FILE_PATH}"
         headers = {"Authorization": f"token {GITHUB_TOKEN}"}
@@ -34,17 +43,24 @@ def load_data():
             decoded = base64.b64decode(content).decode()
             db = json.loads(decoded)
             data = db.get("data", {"groups": {}})
+            user_group_name = db.get("user_group_name", {})
         else:
             data = {"groups": {}}
+            user_group_name = {}
     except:
         data = {"groups": {}}
+        user_group_name = {}
 
 def save_data():
     try:
         url = f"https://api.github.com/repos/{REPO_NAME}/contents/{FILE_PATH}"
         headers = {"Authorization": f"token {GITHUB_TOKEN}"}
 
-        db = {"data": data}
+        db = {
+            "data": data,
+            "user_group_name": user_group_name
+        }
+
         content = base64.b64encode(json.dumps(db, indent=2).encode()).decode()
 
         get_res = requests.get(url, headers=headers)
@@ -62,18 +78,6 @@ def save_data():
 
     except Exception as e:
         print("SAVE ERROR:", e)
-
-# ================= RESET HARIAN =================
-
-def check_reset():
-    global word_data, last_reset_date
-
-    now = datetime.now().date()
-
-    if now != last_reset_date:
-        word_data = {}
-        last_reset_date = now
-        print("RESET HARIAN 00:00")
 
 # ================= HELPER =================
 
@@ -122,7 +126,6 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group["targets"][user_id] = name
     save_data()
-
     await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
 
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -146,38 +149,65 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    group = get_group(update.message.chat.id)
+    msg = update.message
+
+    # 🔥 OWNER MODE (bisa di grup & private)
+    if context.args and is_owner(msg.from_user.id):
+        target_name = context.args[0].lower()
+
+        for gid, group in data["groups"].items():
+            if user_group_name.get(gid) == target_name:
+                if not group["targets"]:
+                    await msg.reply_text("kosong")
+                    return
+
+                text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
+                for i, (uid, name) in enumerate(group["targets"].items(), 1):
+                    text += f"{i}. {name} ({uid})\n"
+
+                await msg.reply_text(text)
+                return
+
+        await msg.reply_text("nama salah")
+        return
+
+    # 🔥 MODE NORMAL
+    group = get_group(msg.chat.id)
 
     if not group["targets"]:
-        await update.message.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙 𝘿𝙐𝙇𝙐🤬")
+        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙 𝘿𝙐𝙇𝙐🤬")
         return
 
     text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
     for i, (uid, name) in enumerate(group["targets"].items(), 1):
         text += f"{i}. {name} ({uid})\n"
 
-    await update.message.reply_text(text)
+    await msg.reply_text(text)
 
-async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    group = get_group(update.message.chat.id)
+async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
 
-    if not is_allowed(update.message.from_user.id, group):
-        await update.message.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
+    if msg.chat.type == "private" and is_owner(msg.from_user.id):
+        text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n"
+        i = 1
+        for gid, group in data["groups"].items():
+            for uid, name in group["allowed_users"].items():
+                text += f"{i}. {name} ({uid})\n"
+                i += 1
+        await msg.reply_text(text)
         return
 
-    if not context.args:
+    group = get_group(msg.chat.id)
+
+    if not group["allowed_users"]:
+        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙𝙪𝙨𝙚𝙧 𝘿𝙐𝙇𝙐🤬")
         return
 
-    arg = context.args[0]
+    text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n"
+    for i, (uid, name) in enumerate(group["allowed_users"].items(), 1):
+        text += f"{i}. {name} ({uid})\n"
 
-    if arg == "on":
-        group["delete_on"] = True
-        await update.message.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦𝗦𝗦🚀")
-    else:
-        group["delete_on"] = False
-        await update.message.reply_text("𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
-
-    save_data()
+    await msg.reply_text(text)
 
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -198,8 +228,9 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(msg.reply_to_message.from_user.id)
 
     group["allowed_users"][user_id] = name
-    save_data()
+    user_group_name[str(msg.chat.id)] = name
 
+    save_data()
     await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
 
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -222,24 +253,10 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
             return
 
-async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    group = get_group(update.message.chat.id)
-
-    if not group["allowed_users"]:
-        await update.message.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙𝙪𝙨𝙚𝙧 𝘿𝙐𝙇𝙐🤬")
-        return
-
-    text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n"
-    for i, (uid, name) in enumerate(group["allowed_users"].items(), 1):
-        text += f"{i}. {name} ({uid})\n"
-
-    await update.message.reply_text(text)
-
 # ================= ITUNGKATA =================
 
 async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
     check_reset()
-
     msg = update.message
     group = get_group(msg.chat.id)
 
