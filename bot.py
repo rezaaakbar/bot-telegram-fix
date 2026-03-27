@@ -15,9 +15,7 @@ REPO_NAME = os.getenv("REPO_NAME")
 FILE_PATH = os.getenv("FILE_PATH", "database.json")
 
 data = {"groups": {}}
-
-# ===== REALTIME DATA (itungkata) =====
-realtime_data = {}  # {chat_id: {user_id: {"text": []}}}
+realtime_data = {}
 
 # ================= DATABASE =================
 
@@ -85,7 +83,7 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not msg.reply_to_message:
-        await msg.reply_text("𝗥𝗘𝗣𝗟𝗬 𝗣𝗘𝗦𝗔𝗡 𝗧𝗔𝗥𝗚𝗘𝗧𝗡𝗬𝗔 /𝗮𝗱𝗱 𝗻𝗮𝗺𝗮")
+        await msg.reply_text("Reply pesan target!")
         return
 
     if not context.args:
@@ -120,7 +118,7 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     name = context.args[0].lower()
 
-    for uid, uname in group["targets"].items():
+    for uid, uname in list(group["targets"].items()):
         if uname == name:
             del group["targets"][uid]
             save_data()
@@ -130,7 +128,6 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
-    # PRIVATE MODE (OWNER ONLY bisa lihat semua grup)
     if msg.chat.type == "private":
         if not is_owner(msg.from_user.id):
             return
@@ -155,7 +152,6 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text(text)
         return
 
-    # GROUP MODE
     group = get_group(msg.chat.id)
 
     if not group["targets"]:
@@ -198,7 +194,7 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not msg.reply_to_message:
-        await msg.reply_text("𝗥𝗘𝗣𝗟𝗬 𝗣𝗘𝗦𝗔𝗡 𝗧𝗔𝗥𝗚𝗘𝗧𝗡𝗬𝗔 /𝗮𝗱𝗱𝘂𝘀𝗲𝗿 𝗻𝗮𝗺𝗮")
+        await msg.reply_text("Reply pesan target!")
         return
 
     if not context.args:
@@ -225,7 +221,7 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     name = context.args[0].lower()
 
-    for uid, uname in group["allowed_users"].items():
+    for uid, uname in list(group["allowed_users"].items()):
         if uname == name:
             del group["allowed_users"][uid]
             save_data()
@@ -245,7 +241,7 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text)
 
-# ===== ITUNGKATA =====
+# ================= ITUNGKATA =================
 
 def reset_if_needed(chat_id):
     now = datetime.now().strftime("%Y-%m-%d")
@@ -256,17 +252,21 @@ def reset_if_needed(chat_id):
 
 async def track_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    chat_id = str(msg.chat.id)
+    if not msg or not msg.text:
+        return
 
+    if msg.text.startswith("/"):
+        return
+
+    chat_id = str(msg.chat.id)
     reset_if_needed(chat_id)
 
-    if msg.text and not msg.text.startswith("/"):
-        uid = str(msg.from_user.id)
+    uid = str(msg.from_user.id)
 
-        if uid not in realtime_data[chat_id]["users"]:
-            realtime_data[chat_id]["users"][uid] = []
+    if uid not in realtime_data[chat_id]["users"]:
+        realtime_data[chat_id]["users"][uid] = []
 
-        realtime_data[chat_id]["users"][uid].append(msg.text.lower())
+    realtime_data[chat_id]["users"][uid].append(msg.text.lower())
 
 async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -281,7 +281,6 @@ async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyword = context.args[0].lower()
     chat_id = str(msg.chat.id)
-
     reset_if_needed(chat_id)
 
     result = {}
@@ -298,18 +297,19 @@ async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     text = f"📊 Statistik Kata (Realtime)\n\n🔤 Kata: {keyword}\n\n"
-
     for uid, count in result.items():
         text += f"{uid} = {count}\n"
 
     text += f"\n📈 Total: {total} kali"
-
     await msg.reply_text(text)
 
 # ================= AUTO DELETE =================
 
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
+    if not msg or not msg.from_user:
+        return
+
     group = get_group(msg.chat.id)
 
     if not group["delete_on"]:
@@ -318,8 +318,14 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if str(msg.from_user.id) in group["targets"]:
         try:
             await msg.delete()
-        except:
-            pass
+        except Exception as e:
+            print("DELETE ERROR:", e)
+
+# ================= COMBINED HANDLER =================
+
+async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await track_message(update, context)
+    await auto_delete(update, context)
 
 # ================= MAIN =================
 
@@ -336,8 +342,8 @@ app.add_handler(CommandHandler("deluser", deluser))
 app.add_handler(CommandHandler("listuser", listuser))
 app.add_handler(CommandHandler("itungkata", itungkata))
 
-app.add_handler(MessageHandler(filters.ALL, track_message))
-app.add_handler(MessageHandler(filters.ALL, auto_delete))
+# 🔥 FIX DISINI
+app.add_handler(MessageHandler(filters.ALL, handle_all))
 
 print("BOT RUNNING...")
 app.run_polling()
