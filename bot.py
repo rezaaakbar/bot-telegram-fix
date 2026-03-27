@@ -3,7 +3,6 @@ import os
 import requests
 import base64
 from datetime import datetime
-
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -16,7 +15,9 @@ REPO_NAME = os.getenv("REPO_NAME")
 FILE_PATH = os.getenv("FILE_PATH", "database.json")
 
 data = {"groups": {}}
-word_stats = {}  # realtime (tidak disimpan)
+
+# ===== REALTIME DATA (itungkata) =====
+realtime_data = {}  # {chat_id: {user_id: {"text": []}}}
 
 # ================= DATABASE =================
 
@@ -53,8 +54,8 @@ def save_data():
             payload["sha"] = sha
 
         requests.put(url, headers=headers, json=payload)
-    except:
-        pass
+    except Exception as e:
+        print("SAVE ERROR:", e)
 
 # ================= HELPER =================
 
@@ -75,36 +76,43 @@ def get_group(chat_id):
 
 # ================= COMMAND =================
 
-# ADD TARGET
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
     if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 {OWNER_USERNAME}")
+        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
         return
 
-    if not msg.reply_to_message or not context.args:
+    if not msg.reply_to_message:
+        await msg.reply_text("𝗥𝗘𝗣𝗟𝗬 𝗣𝗘𝗦𝗔𝗡 𝗧𝗔𝗥𝗚𝗘𝗧𝗡𝗬𝗔 /𝗮𝗱𝗱 𝗻𝗮𝗺𝗮")
+        return
+
+    if not context.args:
         return
 
     name = context.args[0].lower()
     user_id = str(msg.reply_to_message.from_user.id)
 
     if user_id == str(OWNER_ID):
-        await msg.reply_text("𝗜𝗡𝗜 𝗕𝗢𝗦𝗦😹")
+        await msg.reply_text("𝗜𝗡𝗜 𝗕𝗢𝗦𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗧𝗢𝗟𝗢𝗟 𝗚𝗔 𝗕𝗜𝗦𝗔 𝗗𝗜 𝗔𝗗𝗗😹")
+        return
+
+    if user_id in group.get("allowed_users", {}):
+        await msg.reply_text("𝗦𝗘𝗦𝗔𝗠𝗔 𝗣𝗘𝗡𝗚𝗚𝗨𝗡𝗔 𝗕𝗢𝗧 𝗚𝗔𝗕𝗜𝗦𝗔 𝗬𝗔 𝗔𝗦𝗨🥰")
         return
 
     group["targets"][user_id] = name
     save_data()
 
-    await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡✅")
+    await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
 
-# DELETE TARGET
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
     if not is_allowed(msg.from_user.id, group):
+        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
         return
 
     if not context.args:
@@ -112,26 +120,33 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     name = context.args[0].lower()
 
-    for uid, uname in list(group["targets"].items()):
+    for uid, uname in group["targets"].items():
         if uname == name:
             del group["targets"][uid]
             save_data()
-            await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗛𝗔𝗣𝗨𝗦✅")
+            await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
             return
 
-# LIST TARGET
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
-    if context.args:
+    # PRIVATE MODE (OWNER ONLY bisa lihat semua grup)
+    if msg.chat.type == "private":
+        if not is_owner(msg.from_user.id):
+            return
+
+        if not context.args:
+            await msg.reply_text("nama salah")
+            return
+
         name = context.args[0].lower()
         found = False
-        text = "𝐃𝐀𝐅𝐓𝐀𝐑:\n"
+        text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
 
-        for gid, group in data["groups"].items():
-            for uid, uname in group["targets"].items():
+        for gid, gdata in data["groups"].items():
+            for uid, uname in gdata["targets"].items():
                 if uname == name:
-                    text += f"{uname} ({uid}) - {gid}\n"
+                    text += f"{name} ({uid}) - GROUP {gid}\n"
                     found = True
 
         if not found:
@@ -140,47 +155,53 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text(text)
         return
 
+    # GROUP MODE
     group = get_group(msg.chat.id)
 
     if not group["targets"]:
-        await msg.reply_text("𝙆𝙊𝙎𝙊𝙉𝙂")
+        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙 𝘿𝙐𝙇𝙐🤬")
         return
 
-    text = "𝐃𝐀𝐅𝐓𝐀𝐑:\n"
+    text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
     for i, (uid, name) in enumerate(group["targets"].items(), 1):
         text += f"{i}. {name} ({uid})\n"
 
     await msg.reply_text(text)
 
-# DELETE ON OFF
 async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
 
     if not is_allowed(update.message.from_user.id, group):
+        await update.message.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
         return
 
     if not context.args:
         return
 
-    if context.args[0] == "on":
+    arg = context.args[0]
+
+    if arg == "on":
         group["delete_on"] = True
-        await update.message.reply_text("𝗢𝗡🚀")
+        await update.message.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦𝗦𝗦🚀")
     else:
         group["delete_on"] = False
-        await update.message.reply_text("𝗢𝗙𝗙🥰")
+        await update.message.reply_text("𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
 
     save_data()
 
-# ADD USER (OWNER ONLY)
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
     if not is_owner(msg.from_user.id):
-        await msg.reply_text("KHUSUS OWNER")
+        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬 𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔🖕🏻")
         return
 
-    if not msg.reply_to_message or not context.args:
+    if not msg.reply_to_message:
+        await msg.reply_text("𝗥𝗘𝗣𝗟𝗬 𝗣𝗘𝗦𝗔𝗡 𝗧𝗔𝗥𝗚𝗘𝗧𝗡𝗬𝗔 /𝗮𝗱𝗱𝘂𝘀𝗲𝗿 𝗻𝗮𝗺𝗮")
+        return
+
+    if not context.args:
         return
 
     name = context.args[0].lower()
@@ -189,14 +210,14 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group["allowed_users"][user_id] = name
     save_data()
 
-    await msg.reply_text("USER DITAMBAHKAN")
+    await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
 
-# DEL USER
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
     if not is_owner(msg.from_user.id):
+        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬 𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔🖕🏻")
         return
 
     if not context.args:
@@ -204,28 +225,48 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     name = context.args[0].lower()
 
-    for uid, uname in list(group["allowed_users"].items()):
+    for uid, uname in group["allowed_users"].items():
         if uname == name:
             del group["allowed_users"][uid]
             save_data()
-            await msg.reply_text("USER DIHAPUS")
+            await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
             return
 
-# LIST USER
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
 
     if not group["allowed_users"]:
-        await update.message.reply_text("KOSONG")
+        await update.message.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙𝙪𝙨𝙚𝙧 𝘿𝙐𝙇𝙐🤬")
         return
 
-    text = "LIST USER:\n"
+    text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n"
     for i, (uid, name) in enumerate(group["allowed_users"].items(), 1):
         text += f"{i}. {name} ({uid})\n"
 
     await update.message.reply_text(text)
 
-# ================= ITUNGKATA =================
+# ===== ITUNGKATA =====
+
+def reset_if_needed(chat_id):
+    now = datetime.now().strftime("%Y-%m-%d")
+    if chat_id not in realtime_data:
+        realtime_data[chat_id] = {"date": now, "users": {}}
+    elif realtime_data[chat_id]["date"] != now:
+        realtime_data[chat_id] = {"date": now, "users": {}}
+
+async def track_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    chat_id = str(msg.chat.id)
+
+    reset_if_needed(chat_id)
+
+    if msg.text and not msg.text.startswith("/"):
+        uid = str(msg.from_user.id)
+
+        if uid not in realtime_data[chat_id]["users"]:
+            realtime_data[chat_id]["users"][uid] = []
+
+        realtime_data[chat_id]["users"][uid].append(msg.text.lower())
 
 async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -235,52 +276,35 @@ async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.reply_text("lu SIAPA ANJING‼️")
         return
 
-    if len(context.args) < 2:
+    if not context.args:
         return
 
-    kata = context.args[0].lower()
-    usernames = context.args[1:]
-
+    keyword = context.args[0].lower()
     chat_id = str(msg.chat.id)
-    today = datetime.now().strftime("%Y-%m-%d")
 
-    result = f"📊 Statistik Kata\nKata: {kata}\n\n"
+    reset_if_needed(chat_id)
+
+    result = {}
     total = 0
 
-    for user in usernames:
-        count = word_stats.get(chat_id, {}).get(today, {}).get(user, {}).get(kata, 0)
-        result += f"{user} = {count}\n"
-        total += count
+    for uid, texts in realtime_data[chat_id]["users"].items():
+        count = sum(text.count(keyword) for text in texts)
+        if count > 0:
+            result[uid] = count
+            total += count
 
-    result += f"\nTotal: {total}"
-
-    await msg.reply_text(result)
-
-# ================= TRACK CHAT =================
-
-async def tracker(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    if not msg.text:
+    if not result:
+        await msg.reply_text("tidak ada data")
         return
 
-    text = msg.text.lower()
-    if text.startswith("/"):
-        return
+    text = f"📊 Statistik Kata (Realtime)\n\n🔤 Kata: {keyword}\n\n"
 
-    chat_id = str(msg.chat.id)
-    user = f"@{msg.from_user.username}" if msg.from_user.username else str(msg.from_user.id)
-    today = datetime.now().strftime("%Y-%m-%d")
+    for uid, count in result.items():
+        text += f"{uid} = {count}\n"
 
-    if chat_id not in word_stats:
-        word_stats[chat_id] = {}
-    if today not in word_stats[chat_id]:
-        word_stats[chat_id][today] = {}
-    if user not in word_stats[chat_id][today]:
-        word_stats[chat_id][today][user] = {}
+    text += f"\n📈 Total: {total} kali"
 
-    words = text.split()
-    for w in words:
-        word_stats[chat_id][today][user][w] = word_stats[chat_id][today][user].get(w, 0) + 1
+    await msg.reply_text(text)
 
 # ================= AUTO DELETE =================
 
@@ -312,7 +336,7 @@ app.add_handler(CommandHandler("deluser", deluser))
 app.add_handler(CommandHandler("listuser", listuser))
 app.add_handler(CommandHandler("itungkata", itungkata))
 
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, tracker))
+app.add_handler(MessageHandler(filters.ALL, track_message))
 app.add_handler(MessageHandler(filters.ALL, auto_delete))
 
 print("BOT RUNNING...")
