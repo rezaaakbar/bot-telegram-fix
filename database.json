@@ -8,7 +8,8 @@
           "366851946": "ryuu",
           "6844594426": "sanz",
           "6184690942": "mex",
-          "7727226054": "ikkiy"
+          "7727226054": "ikkiy",
+          "6812813686": "miwasu"
         },
         "allowed_users": {
           "7575995144": "kingzaav2"
@@ -66,6 +67,51 @@
         "delete_on": false
       },
       "-1002149492018": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002461263419": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002779729435": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002997339310": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002800044385": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002524671672": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1001996399885": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002324577906": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002308847996": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002157515329": {
         "targets": {},
         "allowed_users": {},
         "delete_on": false
