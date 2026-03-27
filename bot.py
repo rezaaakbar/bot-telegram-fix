@@ -235,22 +235,25 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    group = get_group(msg.chat.id)
 
-    # 🔥 OWNER ONLY
+    # 🔒 OWNER ONLY
     if not is_owner(msg.from_user.id):
-        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬 𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔🖕🏻")
-        return
-
-    if not group["allowed_users"]:
-        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙𝙪𝙨𝙚𝙧 𝘿𝙐𝙇𝙐🤬")
+        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬 𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔🖕🏻"")
         return
 
     text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n"
-    for i, (uid, name) in enumerate(group["allowed_users"].items(), 1):
-        text += f"{i}. {name} ({uid})\n"
+    found = False
 
-    await msg.reply_text(text)
+    # 🔍 CEK SEMUA GROUP (BIAR BISA DI PRIVATE JUGA)
+    for gid, gdata in data["groups"].items():
+        for uid, name in gdata["allowed_users"].items():
+            text += f"{name} ({uid}) - GROUP {gid}\n"
+            found = True
+
+    if not found:
+        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙𝙪𝙨𝙚𝙧 𝘿𝙐𝙇𝙐🤬")
+    else:
+        await msg.reply_text(text)
 
 # ================= ITUNGKATA =================
 
