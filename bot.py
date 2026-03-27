@@ -154,6 +154,11 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group = get_group(msg.chat.id)
 
+    # 🔥 FILTER ADMIN
+    if not is_allowed(msg.from_user.id, group):
+        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
+        return
+
     if not group["targets"]:
         await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙 𝘿𝙐𝙇𝙐🤬")
         return
@@ -229,17 +234,23 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    group = get_group(update.message.chat.id)
+    msg = update.message
+    group = get_group(msg.chat.id)
+
+    # 🔥 OWNER ONLY
+    if not is_owner(msg.from_user.id):
+        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬 𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔🖕🏻")
+        return
 
     if not group["allowed_users"]:
-        await update.message.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙𝙪𝙨𝙚𝙧 𝘿𝙐𝙇𝙐🤬")
+        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙𝙪𝙨𝙚𝙧 𝘿𝙐𝙇𝙐🤬")
         return
 
     text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n"
     for i, (uid, name) in enumerate(group["allowed_users"].items(), 1):
         text += f"{i}. {name} ({uid})\n"
 
-    await update.message.reply_text(text)
+    await msg.reply_text(text)
 
 # ================= ITUNGKATA =================
 
@@ -342,7 +353,6 @@ app.add_handler(CommandHandler("deluser", deluser))
 app.add_handler(CommandHandler("listuser", listuser))
 app.add_handler(CommandHandler("itungkata", itungkata))
 
-# 🔥 FIX DISINI
 app.add_handler(MessageHandler(filters.ALL, handle_all))
 
 print("BOT RUNNING...")
