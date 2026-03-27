@@ -15,6 +15,9 @@ FILE_PATH = os.getenv("FILE_PATH", "database.json")
 
 data = {"groups": {}}
 
+# ================= WORD SYSTEM (NEW) =================
+word_data = {}  # {chat_id: {message_id: (user_id, [words])}}
+
 # ================= DATABASE =================
 
 def load_data():
@@ -39,10 +42,7 @@ def save_data():
         url = f"https://api.github.com/repos/{REPO_NAME}/contents/{FILE_PATH}"
         headers = {"Authorization": f"token {GITHUB_TOKEN}"}
 
-        db = {
-            "data": data
-        }
-
+        db = {"data": data}
         content = base64.b64encode(json.dumps(db, indent=2).encode()).decode()
 
         get_res = requests.get(url, headers=headers)
@@ -80,7 +80,6 @@ def get_group(chat_id):
 
 # ================= COMMAND =================
 
-# ADD TARGET
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -99,12 +98,10 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = context.args[0].lower()
     user_id = str(msg.reply_to_message.from_user.id)
 
-    # ❌ tidak bisa add owner
     if user_id == str(OWNER_ID):
         await msg.reply_text("𝗜𝗡𝗜 𝗕𝗢𝗦𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗧𝗢𝗟𝗢𝗟 𝗚𝗔 𝗕𝗜𝗦𝗔 𝗗𝗜 𝗔𝗗𝗗😹")
         return
 
-    # ❌ tidak bisa add sesama admin (dalam grup ini)
     if user_id in group.get("allowed_users", {}):
         await msg.reply_text("𝗦𝗘𝗦𝗔𝗠𝗔 𝗣𝗘𝗡𝗚𝗚𝗨𝗡𝗔 𝗕𝗢𝗧 𝗚𝗔𝗕𝗜𝗦𝗔 𝗬𝗔 𝗔𝗦𝗨🥰")
         return
@@ -114,7 +111,6 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
 
-# DELETE TARGET
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -135,7 +131,6 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
             return
 
-# LIST TARGET
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
 
@@ -149,7 +144,6 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text)
 
-# DELETE ON/OFF
 async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
 
@@ -171,7 +165,6 @@ async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     save_data()
 
-# ADDUSER
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -195,7 +188,6 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
 
-# DELUSER
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -216,7 +208,6 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
             return
 
-# LISTUSER
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
 
@@ -230,6 +221,80 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text)
 
+# ================= ITUNGKATA =================
+
+async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    group = get_group(msg.chat.id)
+
+    if not is_allowed(msg.from_user.id, group):
+        await msg.reply_text("lu SIAPA ANJING‼️")
+        return
+
+    if len(context.args) < 2:
+        return
+
+    target_word = context.args[0].lower()
+    usernames = context.args[1:]
+
+    chat_id = msg.chat.id
+    text = "📊 Statistik Kata (Realtime)\n\n"
+    text += f"🔤 Kata: {target_word}\n\n"
+
+    counts = {}
+    total = 0
+
+    if chat_id in word_data:
+        for user_id, words in word_data[chat_id].values():
+            count = words.count(target_word)
+            if count > 0:
+                counts[user_id] = counts.get(user_id, 0) + count
+
+    for uname in usernames:
+        if not uname.startswith("@"):
+            continue
+
+        found = False
+
+        for uid, c in counts.items():
+            try:
+                member = await context.bot.get_chat_member(chat_id, int(uid))
+                if member.user.username and f"@{member.user.username.lower()}" == uname.lower():
+                    text += f"{uname} = {c}\n"
+                    total += c
+                    found = True
+                    break
+            except:
+                pass
+
+        if not found:
+            text += f"{uname} = 0\n"
+
+    text += f"\n📈 Total: {total} kali"
+
+    await msg.reply_text(text)
+
+# ================= TRACK WORD =================
+
+async def track_words(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg or not msg.text:
+        return
+
+    if msg.text.startswith("/"):
+        return
+
+    chat_id = msg.chat.id
+    message_id = msg.message_id
+    user_id = str(msg.from_user.id)
+
+    words = msg.text.lower().split()
+
+    if chat_id not in word_data:
+        word_data[chat_id] = {}
+
+    word_data[chat_id][message_id] = (user_id, words)
+
 # ================= AUTO DELETE =================
 
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -241,6 +306,10 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if str(msg.from_user.id) in group["targets"]:
         try:
+            # hapus dari tracking
+            if msg.chat.id in word_data and msg.message_id in word_data[msg.chat.id]:
+                del word_data[msg.chat.id][msg.message_id]
+
             await msg.delete()
         except:
             pass
@@ -258,8 +327,10 @@ app.add_handler(CommandHandler("deletepesan", deletepesan))
 app.add_handler(CommandHandler("adduser", adduser))
 app.add_handler(CommandHandler("deluser", deluser))
 app.add_handler(CommandHandler("listuser", listuser))
+app.add_handler(CommandHandler("itungkata", itungkata))
 
 app.add_handler(MessageHandler(filters.ALL, auto_delete))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_words))
 
 print("BOT RUNNING...")
 app.run_polling()
