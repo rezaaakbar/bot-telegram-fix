@@ -2,6 +2,7 @@ import json
 import os
 import requests
 import base64
+from datetime import datetime
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -15,8 +16,9 @@ FILE_PATH = os.getenv("FILE_PATH", "database.json")
 
 data = {"groups": {}}
 
-# ================= WORD SYSTEM (NEW) =================
-word_data = {}  # {chat_id: {message_id: (user_id, [words])}}
+# ================= WORD SYSTEM =================
+word_data = {}
+last_reset_date = datetime.now().date()
 
 # ================= DATABASE =================
 
@@ -60,6 +62,18 @@ def save_data():
 
     except Exception as e:
         print("SAVE ERROR:", e)
+
+# ================= RESET HARIAN =================
+
+def check_reset():
+    global word_data, last_reset_date
+
+    now = datetime.now().date()
+
+    if now != last_reset_date:
+        word_data = {}
+        last_reset_date = now
+        print("RESET HARIAN 00:00")
 
 # ================= HELPER =================
 
@@ -224,6 +238,8 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ================= ITUNGKATA =================
 
 async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    check_reset()
+
     msg = update.message
     group = get_group(msg.chat.id)
 
@@ -238,7 +254,7 @@ async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
     usernames = context.args[1:]
 
     chat_id = msg.chat.id
-    text = "📊 Statistik Kata (Realtime)\n\n"
+    text = "📊 Statistik Kata (Hari Ini)\n\n"
     text += f"🔤 Kata: {target_word}\n\n"
 
     counts = {}
@@ -274,9 +290,11 @@ async def itungkata(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
-# ================= TRACK WORD =================
+# ================= TRACK =================
 
 async def track_words(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    check_reset()
+
     msg = update.message
     if not msg or not msg.text:
         return
@@ -306,7 +324,6 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if str(msg.from_user.id) in group["targets"]:
         try:
-            # hapus dari tracking
             if msg.chat.id in word_data and msg.message_id in word_data[msg.chat.id]:
                 del word_data[msg.chat.id][msg.message_id]
 
