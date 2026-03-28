@@ -65,7 +65,9 @@
         "delete_on": false
       },
       "-1002192994551": {
-        "targets": {},
+        "targets": {
+          "7575995144": "kingzaav2"
+        },
         "allowed_users": {
           "6379207788": "faza"
         },
