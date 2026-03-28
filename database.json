@@ -66,7 +66,9 @@
       },
       "-1002192994551": {
         "targets": {},
-        "allowed_users": {},
+        "allowed_users": {
+          "6379207788": "faza"
+        },
         "delete_on": false
       },
       "-1002149492018": {
@@ -125,6 +127,21 @@
         "delete_on": false
       },
       "-1002490990274": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1003348325486": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1002336213643": {
+        "targets": {},
+        "allowed_users": {},
+        "delete_on": false
+      },
+      "-1003545364383": {
         "targets": {},
         "allowed_users": {},
         "delete_on": false
