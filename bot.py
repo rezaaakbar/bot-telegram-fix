@@ -1,7 +1,5 @@
 import json
 import os
-import requests
-import base64
 from datetime import datetime
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
@@ -10,9 +8,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = 6818257079
 OWNER_USERNAME = "@KINGZAAASLI"
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-REPO_NAME = os.getenv("REPO_NAME")
-FILE_PATH = os.getenv("FILE_PATH", "database.json")
+DB_FILE = "database.json"
 
 data = {"groups": {}}
 realtime_data = {}
@@ -21,39 +17,17 @@ realtime_data = {}
 
 def load_data():
     global data
-    try:
-        url = f"https://api.github.com/repos/{REPO_NAME}/contents/{FILE_PATH}"
-        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-        res = requests.get(url, headers=headers)
+    if not os.path.exists(DB_FILE):
+        with open(DB_FILE, "w") as f:
+            json.dump({"data": {"groups": {}}}, f)
 
-        if res.status_code == 200:
-            content = res.json()["content"]
-            decoded = base64.b64decode(content).decode()
-            db = json.loads(decoded)
-            data = db.get("data", {"groups": {}})
-        else:
-            data = {"groups": {}}
-    except:
-        data = {"groups": {}}
+    with open(DB_FILE, "r") as f:
+        db = json.load(f)
+        data = db.get("data", {"groups": {}})
 
 def save_data():
-    try:
-        url = f"https://api.github.com/repos/{REPO_NAME}/contents/{FILE_PATH}"
-        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-
-        db = {"data": data}
-        content = base64.b64encode(json.dumps(db, indent=2).encode()).decode()
-
-        get_res = requests.get(url, headers=headers)
-        sha = get_res.json().get("sha")
-
-        payload = {"message": "update database", "content": content}
-        if sha:
-            payload["sha"] = sha
-
-        requests.put(url, headers=headers, json=payload)
-    except Exception as e:
-        print("SAVE ERROR:", e)
+    with open(DB_FILE, "w") as f:
+        json.dump({"data": data}, f, indent=2)
 
 # ================= HELPER =================
 
@@ -102,7 +76,6 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group["targets"][user_id] = name
     save_data()
-
     await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
 
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -128,8 +101,10 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
+    # PRIVATE (OWNER ONLY)
     if msg.chat.type == "private":
         if not is_owner(msg.from_user.id):
+            await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 {OWNER_USERNAME}")
             return
 
         if not context.args:
@@ -152,11 +127,11 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text(text)
         return
 
+    # GROUP
     group = get_group(msg.chat.id)
 
-    # 🔥 FILTER ADMIN
     if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
+        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 {OWNER_USERNAME}")
         return
 
     if not group["targets"]:
@@ -173,15 +148,13 @@ async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
 
     if not is_allowed(update.message.from_user.id, group):
-        await update.message.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
+        await update.message.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 {OWNER_USERNAME}")
         return
 
     if not context.args:
         return
 
-    arg = context.args[0]
-
-    if arg == "on":
+    if context.args[0] == "on":
         group["delete_on"] = True
         await update.message.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦𝗦𝗦🚀")
     else:
@@ -210,7 +183,6 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group["allowed_users"][user_id] = name
     save_data()
-
     await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
 
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -236,15 +208,13 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
-    # 🔒 OWNER ONLY
     if not is_owner(msg.from_user.id):
-        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬 𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔🖕🏻")
+        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 {OWNER_USERNAME}")
         return
 
     text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n"
     found = False
 
-    # 🔍 CEK SEMUA GROUP (BIAR BISA DI PRIVATE JUGA)
     for gid, gdata in data["groups"].items():
         for uid, name in gdata["allowed_users"].items():
             text += f"{name} ({uid}) - GROUP {gid}\n"
@@ -332,10 +302,10 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if str(msg.from_user.id) in group["targets"]:
         try:
             await msg.delete()
-        except Exception as e:
-            print("DELETE ERROR:", e)
+        except:
+            pass
 
-# ================= COMBINED HANDLER =================
+# ================= HANDLER =================
 
 async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await track_message(update, context)
