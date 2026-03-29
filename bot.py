@@ -101,6 +101,46 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
             return
 
+# LIST TARGET
+async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+
+    # PRIVATE
+    if msg.chat.type == "private":
+        if not is_owner(msg.from_user.id):
+            await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
+            return
+
+        text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n\n"
+        found = False
+
+        for gid, gdata in data["groups"].items():
+            if gdata["targets"]:
+                text += f"({gid})\n"
+                for i, (uid, name) in enumerate(gdata["targets"].items(), 1):
+                    text += f"{i}. {name} ({uid})\n"
+                text += "\n"
+                found = True
+
+        if not found:
+            await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙 𝘿𝙐𝙇𝙐🤬")
+        else:
+            await msg.reply_text(text)
+        return
+
+    # GROUP
+    group = get_group(msg.chat.id)
+
+    if not group["targets"]:
+        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙 𝘿𝙐𝙇𝙐🤬")
+        return
+
+    text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
+    for i, (uid, name) in enumerate(group["targets"].items(), 1):
+        text += f"{i}. {name} ({uid})\n"
+
+    await msg.reply_text(text)
+
 # ===== ADMIN =====
 
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -152,7 +192,6 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     target = context.args[0].lower()
 
-    # hapus semua admin via ID grup
     if target.startswith("-100"):
         if target in data["groups"]:
             del data["groups"][target]
@@ -177,7 +216,7 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await msg.reply_text("nama tidak ditemukan")
 
-# ================= DELETE ON/OFF =================
+# DELETE ON/OFF
 async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -209,6 +248,7 @@ app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("delete", delete))
+app.add_handler(CommandHandler("listusn", listusn))
 app.add_handler(CommandHandler("adduser", adduser))
 app.add_handler(CommandHandler("listuser", listuser))
 app.add_handler(CommandHandler("deluser", deluser))
