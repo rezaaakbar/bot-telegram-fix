@@ -8,7 +8,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = 6818257079
 OWNER_USERNAME = "@KINGZAAASLI"
 
-================= MONGODB =================
+#================= MONGODB =================
 
 MONGO_URI = os.getenv("MONGO_URI")
 
@@ -40,7 +40,7 @@ groups_col.update_one(
 {"$set": group}
 )
 
-================= HELPER =================
+#================= HELPER =================
 
 def is_owner(user_id):
 return user_id == OWNER_ID
@@ -48,7 +48,7 @@ return user_id == OWNER_ID
 def is_allowed(user_id, group):
 return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
 
-================= DELAY DELETE =================
+#================= DELAY DELETE =================
 
 async def delay_delete(msg, delay):
 try:
@@ -57,7 +57,7 @@ await msg.delete()
 except:
 pass
 
-================= AUTO DELETE =================
+#================= AUTO DELETE =================
 
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 msg = update.message
@@ -102,7 +102,7 @@ if group["filter_foto"] and msg.photo:
     except:  
         pass
 
-================= COMMAND TARGET =================
+#================= COMMAND TARGET =================
 
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 msg = update.message
@@ -160,7 +160,7 @@ for uid, uname in list(group["targets"].items()):
         asyncio.create_task(delay_delete(bot_msg, 3))  
         return
 
-================= LIST TARGET =================
+#================= LIST TARGET =================
 
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
 msg = update.message
@@ -188,7 +188,7 @@ for i, (uid, name) in enumerate(group["targets"].items(), 1):
 
 await msg.reply_text(text)
 
-================= ADMIN =================
+#================= ADMIN =================
 
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 msg = update.message
@@ -252,7 +252,7 @@ for uid, name in list(group["allowed_users"].items()):
         asyncio.create_task(delay_delete(bot_msg, 3))  
         return
 
-================= FILTER TEXT =================
+#================= FILTER TEXT =================
 
 async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 msg = update.message
@@ -300,7 +300,7 @@ if text in group["texts"]:
 else:  
     await msg.reply_text("TIDAK ADA DI LIST BEGO")
 
-================= ALLTEXT (UPDATED) =================
+#================= ALLTEXT (UPDATED) =================
 
 async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 msg = update.message
@@ -334,7 +334,7 @@ for i, t in enumerate(group["texts"], 1):
 
 await msg.reply_text(text)
 
-================= FILTER TEXT =================
+#================= FILTER TEXT =================
 
 async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 msg = update.message
@@ -357,7 +357,7 @@ save_group(group)
 asyncio.create_task(delay_delete(msg, 2))  
 asyncio.create_task(delay_delete(bot_msg, 3))
 
-================= FILTER FOTO =================
+#================= FILTER FOTO =================
 
 async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 msg = update.message
@@ -380,7 +380,7 @@ save_group(group)
 asyncio.create_task(delay_delete(msg, 2))  
 asyncio.create_task(delay_delete(bot_msg, 3))
 
-================= DELETE ON/OFF =================
+#================= DELETE ON/OFF =================
 
 async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
 msg = update.message
@@ -403,12 +403,12 @@ save_group(group)
 asyncio.create_task(delay_delete(msg, 2))  
 asyncio.create_task(delay_delete(bot_msg, 3))
 
-================= HANDLE =================
+#================= HANDLE =================
 
 async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 await auto_delete(update, context)
 
-================= MAIN =================
+#================= MAIN =================
 
 app = ApplicationBuilder().token(TOKEN).build()
 
