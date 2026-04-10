@@ -242,7 +242,7 @@ async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not context.args:
-        await msg.reply_text("MASUKIN TEXT NYA BEGO")
+        await msg.reply_text("𝗧𝗘𝗫𝗧 𝗡𝗬𝗔 𝗠𝗔𝗦𝗨𝗞𝗜𝗡 𝗗𝗨𝗟𝗨 𝗕𝗢𝗦𝗦🥰")
         return
 
     text = " ".join(context.args).lower()
@@ -251,7 +251,7 @@ async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
         group["texts"].append(text)
         save_group(group)
 
-        bot_msg = await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
+        bot_msg = await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡✅")
         asyncio.create_task(delay_delete(msg, 2))
         asyncio.create_task(delay_delete(bot_msg, 3))
     else:
@@ -265,7 +265,7 @@ async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not context.args:
-        await msg.reply_text("MASUKIN TEXT NYA BEGO")
+        await msg.reply_text("𝗧𝗘𝗫𝗧 𝗡𝗬𝗔 𝗠𝗔𝗦𝗨𝗞𝗜𝗡 𝗗𝗨𝗟𝗨 𝗕𝗢𝗦𝗦🥰")
         return
 
     text = " ".join(context.args).lower()
@@ -274,7 +274,7 @@ async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
         group["texts"].remove(text)
         save_group(group)
 
-        bot_msg = await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
+        bot_msg = await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗛𝗔𝗣𝗨𝗦✅")
         asyncio.create_task(delay_delete(msg, 2))
         asyncio.create_task(delay_delete(bot_msg, 3))
     else:
@@ -287,7 +287,7 @@ async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # PRIVATE MODE
     if msg.chat.type == "private":
         if not is_owner(msg.from_user.id):
-            await msg.reply_text("GA USAH SOK JAGO BEGO")
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
             return
 
         if not context.args:
@@ -300,11 +300,11 @@ async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 🔒 BATAS AKSES
     if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text("GA USAH SOK JAGO BEGO")
+        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
         return
 
     if not group["texts"]:
-        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝙙 𝘿𝙐𝙇𝙐🤬")
+        await msg.reply_text("𝗠𝗔𝗦𝗜𝗛 𝗞𝗢𝗦𝗢𝗡𝗚 𝗜𝗡𝗜 𝗕𝗢𝗦𝗦 𝗧𝗔𝗠𝗕𝗔𝗛𝗜𝗡 𝗗𝗨𝗟𝗨 𝗧𝗘𝗞𝗦𝗡𝗬𝗔🥰")
         return
 
     text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
@@ -326,10 +326,10 @@ async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if context.args[0] == "on":
         group["filter_foto"] = True
-        bot_msg = await msg.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦𝗦𝗦🚀")
+        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗙𝗢𝗧𝗢 𝗔𝗞𝗧𝗜𝗙✅")
     else:
         group["filter_foto"] = False
-        bot_msg = await msg.reply_text("𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
+        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗙𝗢𝗧𝗢 𝗡𝗢𝗡𝗔𝗞𝗧𝗜𝗙❌")
 
     save_group(group)
     asyncio.create_task(delay_delete(msg, 2))
