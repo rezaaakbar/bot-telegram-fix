@@ -45,7 +45,15 @@ def is_owner(user_id):
 
 def is_allowed(user_id, group):
     return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
+    
+def get_group_by_allowed_user(user_id):
+    uid = str(user_id)
 
+    for group in groups_col.find():
+        if uid in group.get("allowed_users", {}):
+            return group
+
+    return None
 # ================= DELAY DELETE =================
 async def delay_delete(msg, delay):
     try:
@@ -160,15 +168,16 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
     if msg.chat.type == "private":
-        if not is_owner(msg.from_user.id):
-            await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 {OWNER_USERNAME}")
+        if is_owner(msg.from_user.id):
+            await msg.reply_text("OWNER CEK VIA GRUP / FITUR LAMA")
             return
 
-        if not context.args:
-            await msg.reply_text("MASUKIN ID GRUP NYA BEGO\nContoh: /listusn -100xxxx")
+        group = get_group_by_allowed_user(msg.from_user.id)
+
+        if not group:
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
             return
 
-        group = get_group(context.args[0])
     else:
         group = get_group(msg.chat.id)
 
@@ -269,34 +278,31 @@ async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if msg.chat.type == "private":
         if not is_owner(msg.from_user.id):
-            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            group = get_group_by_allowed_user(msg.from_user.id)
+
+            if not group:
+                await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+                return
+        else:
+            await msg.reply_text("OWNER PAKE DI GRUP/PAKE ID MANUAL AJA")
             return
 
-        if len(context.args) < 2:
-            await msg.reply_text("𝗙𝗢𝗥𝗠𝗔𝗧:\n/addtext text -100xxxx")
-            return
-
-        target_group_id = context.args[-1]
-        text = " ".join(context.args[:-1]).lower()
-
-    else:
-        group_check = get_group(msg.chat.id)
-
-        if not is_allowed(msg.from_user.id, group_check):
-            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
-            return
-
-        target_group_id = msg.chat.id
         text = " ".join(context.args).lower()
 
-    group = get_group(target_group_id)
+    else:
+        group = get_group(msg.chat.id)
+
+        if not is_allowed(msg.from_user.id, group):
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            return
+
+        text = " ".join(context.args).lower()
 
     if text not in group["texts"]:
         group["texts"].append(text)
         save_group(group)
 
         bot_msg = await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡✅")
-        asyncio.create_task(delay_delete(msg, 2))
         asyncio.create_task(delay_delete(bot_msg, 3))
     else:
         await msg.reply_text("SUDAH ADA DI LIST BEGO")
@@ -310,34 +316,31 @@ async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if msg.chat.type == "private":
         if not is_owner(msg.from_user.id):
-            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            group = get_group_by_allowed_user(msg.from_user.id)
+
+            if not group:
+                await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+                return
+        else:
+            await msg.reply_text("OWNER PAKE DI GRUP/PAKE ID MANUAL AJA")
             return
 
-        if len(context.args) < 2:
-            await msg.reply_text("𝗙𝗢𝗥𝗠𝗔𝗧:\n/deltext text -100xxxx")
-            return
-
-        target_group_id = context.args[-1]
-        text = " ".join(context.args[:-1]).lower()
-
-    else:
-        group_check = get_group(msg.chat.id)
-
-        if not is_allowed(msg.from_user.id, group_check):
-            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
-            return
-
-        target_group_id = msg.chat.id
         text = " ".join(context.args).lower()
 
-    group = get_group(target_group_id)
+    else:
+        group = get_group(msg.chat.id)
+
+        if not is_allowed(msg.from_user.id, group):
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            return
+
+        text = " ".join(context.args).lower()
 
     if text in group["texts"]:
         group["texts"].remove(text)
         save_group(group)
 
         bot_msg = await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗛𝗔𝗣𝗨𝗦✅")
-        asyncio.create_task(delay_delete(msg, 2))
         asyncio.create_task(delay_delete(bot_msg, 3))
     else:
         await msg.reply_text("TIDAK ADA DI LIST BEGO")
@@ -375,26 +378,36 @@ async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 # ================= FILTER TEXT =================
-async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    group = get_group(msg.chat.id)
 
-    if not is_allowed(msg.from_user.id, group):
-        return
+    if msg.chat.type == "private":
+        if is_owner(msg.from_user.id):
+            await msg.reply_text("OWNER CEK VIA GRUP / FITUR LAMA")
+            return
 
-    if not context.args:
-        return
+        group = get_group_by_allowed_user(msg.from_user.id)
 
-    if context.args[0] == "on":
-        group["filter_text"] = True
-        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗧𝗘𝗫𝗧 𝗔𝗞𝗧𝗜𝗙✅")
+        if not group:
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            return
+
     else:
-        group["filter_text"] = False
-        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗧𝗘𝗫𝗧 𝗡𝗢𝗡𝗔𝗞𝗧𝗜𝗙❌")
+        group = get_group(msg.chat.id)
 
-    save_group(group)
-    asyncio.create_task(delay_delete(msg, 2))
-    asyncio.create_task(delay_delete(bot_msg, 3))
+        if not is_allowed(msg.from_user.id, group):
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            return
+
+    if not group["texts"]:
+        await msg.reply_text("𝗠𝗔𝗦𝗜𝗛 𝗞𝗢𝗦𝗢𝗡𝗚 𝗜𝗡𝗜 𝗕𝗢𝗦𝗦 𝗧𝗔𝗠𝗕𝗔𝗛𝗜𝗡 𝗗𝗨𝗟𝗨 𝗧𝗘𝗞𝗦𝗡𝗬𝗔🥰")
+        return
+
+    text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
+    for i, t in enumerate(group["texts"], 1):
+        text += f"{i}. {t}\n"
+
+    await msg.reply_text(text)
     
 # ================= FILTER FOTO =================
 async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
