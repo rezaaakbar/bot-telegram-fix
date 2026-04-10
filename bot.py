@@ -312,7 +312,28 @@ async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text += f"{i}. {t}\n"
 
     await msg.reply_text(text)
+# ================= FILTER TEXT =================
+async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    group = get_group(msg.chat.id)
 
+    if not is_allowed(msg.from_user.id, group):
+        return
+
+    if not context.args:
+        return
+
+    if context.args[0] == "on":
+        group["filter_text"] = True
+        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗧𝗘𝗫𝗧 𝗔𝗞𝗧𝗜𝗙✅")
+    else:
+        group["filter_text"] = False
+        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗧𝗘𝗫𝗧 𝗡𝗢𝗡𝗔𝗞𝗧𝗜𝗙❌")
+
+    save_group(group)
+    asyncio.create_task(delay_delete(msg, 2))
+    asyncio.create_task(delay_delete(bot_msg, 3))
+    
 # ================= FILTER FOTO =================
 async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -375,6 +396,7 @@ app.add_handler(CommandHandler("deluser", deluser))
 app.add_handler(CommandHandler("addtext", addtext))
 app.add_handler(CommandHandler("deltext", deltext))
 app.add_handler(CommandHandler("alltext", alltext))
+app.add_handler(CommandHandler("filtertext", filtertext))
 app.add_handler(CommandHandler("filterfoto", filterfoto))
 
 app.add_handler(CommandHandler("deletepesan", deletepesan))
