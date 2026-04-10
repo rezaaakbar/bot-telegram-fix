@@ -230,13 +230,25 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not context.args:
+        await msg.reply_text("𝗠𝗔𝗦𝗨𝗞𝗜𝗡 𝗡𝗔𝗠𝗔 𝗨𝗦𝗘𝗥 𝗗𝗨𝗟𝗨 𝗕𝗢𝗦𝗦🥰")
         return
 
-    target = context.args[0].lower()
-    group = get_group(msg.chat.id)
+    if msg.chat.type == "private":
+        if len(context.args) < 2:
+            await msg.reply_text("𝗙𝗢𝗥𝗠𝗔𝗧:\n/deluser nama -100xxxx")
+            return
+
+        target_name = context.args[0].lower()
+        target_group_id = context.args[1]
+
+    else:
+        target_name = context.args[0].lower()
+        target_group_id = msg.chat.id
+
+    group = get_group(target_group_id)
 
     for uid, name in list(group["allowed_users"].items()):
-        if name == target:
+        if name == target_name:
             del group["allowed_users"][uid]
             save_group(group)
 
@@ -245,19 +257,39 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
             asyncio.create_task(delay_delete(bot_msg, 3))
             return
 
+    await msg.reply_text("𝗨𝗦𝗘𝗥 𝗧𝗜𝗗𝗔𝗞 𝗗𝗜𝗧𝗘𝗠𝗨𝗞𝗔𝗡❌")
+
 # ================= FILTER TEXT =================
 async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    group = get_group(msg.chat.id)
-
-    if not is_allowed(msg.from_user.id, group):
-        return
 
     if not context.args:
         await msg.reply_text("𝗧𝗘𝗫𝗧 𝗡𝗬𝗔 𝗠𝗔𝗦𝗨𝗞𝗜𝗡 𝗗𝗨𝗟𝗨 𝗕𝗢𝗦𝗦🥰")
         return
 
-    text = " ".join(context.args).lower()
+    if msg.chat.type == "private":
+        if not is_owner(msg.from_user.id):
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            return
+
+        if len(context.args) < 2:
+            await msg.reply_text("𝗙𝗢𝗥𝗠𝗔𝗧:\n/addtext text -100xxxx")
+            return
+
+        target_group_id = context.args[-1]
+        text = " ".join(context.args[:-1]).lower()
+
+    else:
+        group_check = get_group(msg.chat.id)
+
+        if not is_allowed(msg.from_user.id, group_check):
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            return
+
+        target_group_id = msg.chat.id
+        text = " ".join(context.args).lower()
+
+    group = get_group(target_group_id)
 
     if text not in group["texts"]:
         group["texts"].append(text)
@@ -271,16 +303,34 @@ async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    group = get_group(msg.chat.id)
-
-    if not is_allowed(msg.from_user.id, group):
-        return
 
     if not context.args:
         await msg.reply_text("𝗧𝗘𝗫𝗧 𝗡𝗬𝗔 𝗠𝗔𝗦𝗨𝗞𝗜𝗡 𝗗𝗨𝗟𝗨 𝗕𝗢𝗦𝗦🥰")
         return
 
-    text = " ".join(context.args).lower()
+    if msg.chat.type == "private":
+        if not is_owner(msg.from_user.id):
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            return
+
+        if len(context.args) < 2:
+            await msg.reply_text("𝗙𝗢𝗥𝗠𝗔𝗧:\n/deltext text -100xxxx")
+            return
+
+        target_group_id = context.args[-1]
+        text = " ".join(context.args[:-1]).lower()
+
+    else:
+        group_check = get_group(msg.chat.id)
+
+        if not is_allowed(msg.from_user.id, group_check):
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            return
+
+        target_group_id = msg.chat.id
+        text = " ".join(context.args).lower()
+
+    group = get_group(target_group_id)
 
     if text in group["texts"]:
         group["texts"].remove(text)
