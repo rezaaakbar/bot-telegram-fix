@@ -170,7 +170,38 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text += f"{i}. {name} ({uid})\n"
 
     await msg.reply_text(text)
+    
+async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = str(update.effective_chat.id)
 
+    if chat_id not in data["groups"]:
+        data["groups"][chat_id] = {
+            "targets": {},
+            "allowed_users": {},
+            "delete_on": False,
+            "text_filters": [],
+            "text_filter_on": False,
+            "photo_filter_on": False
+        }
+
+    if len(context.args) == 0:
+        await update.message.reply_text("gunakan: /deletepesan on atau off")
+        return
+
+    arg = context.args[0].lower()
+
+    if arg == "on":
+        data["groups"][chat_id]["delete_on"] = True
+        save_data()
+        await update.message.reply_text("AUTO DELETE TARGET DI AKTIFKAN")
+
+    elif arg == "off":
+        data["groups"][chat_id]["delete_on"] = False
+        save_data()
+        await update.message.reply_text("AUTO DELETE TARGET DI MATIKAN")
+
+    else:
+        await update.message.reply_text("gunakan: /deletepesan on atau off")
 # ===== ADMIN =====
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -345,6 +376,7 @@ app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("delete", delete))
 app.add_handler(CommandHandler("listusn", listusn))
+app.add_handler(CommandHandler("deletepesan", deletepesan))
 app.add_handler(CommandHandler("adduser", adduser))
 app.add_handler(CommandHandler("listuser", listuser))
 app.add_handler(CommandHandler("deluser", deluser))
