@@ -110,10 +110,22 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not msg.reply_to_message or not context.args:
         return
 
+    target_user = msg.reply_to_message.from_user
+    target_id = str(target_user.id)
     name = context.args[0].lower()
-    uid = str(msg.reply_to_message.from_user.id)
 
-    group["targets"][uid] = name
+    # ❌ CEK TARGET OWNER
+    if target_user.id == OWNER_ID:
+        await msg.reply_text("𝗛𝗔𝗛𝗔𝗛𝗔 𝗚𝗢𝗕𝗟𝗢𝗞 𝗜𝗧𝗨 𝗕𝗢𝗦𝗦 𝗚𝗨𝗔 𝗟𝗔𝗪𝗔𝗞😹😹😹")
+        return
+
+    # ❌ CEK TARGET ADMIN (allowed_users)
+    if target_id in group.get("allowed_users", {}):
+        await msg.reply_text("𝗟𝗨 𝗠𝗔𝗦𝗜𝗛 𝗦𝗔𝗠𝗔 𝗦𝗔𝗠𝗔 𝗕𝗔𝗪𝗔𝗛𝗔𝗡 𝗚𝗔𝗨𝗦𝗔𝗛 𝗦𝗢𝗞 𝗝𝗔𝗚𝗢🖕🏻")
+        return
+
+    # ✅ LANJUT NORMAL
+    group["targets"][target_id] = name
     save_group(group)
 
     bot_msg = await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
