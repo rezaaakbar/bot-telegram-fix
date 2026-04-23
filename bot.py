@@ -297,17 +297,20 @@ async def masaaktif(update, context):
         days = int(context.args[0])
         name = context.args[1].lower()
 
-        # ambil (userid) dan (grupid) dengan aman
         match = re.findall(r"\(([^)]+)\)", msg.text)
 
         if len(match) < 2:
-            await msg.reply_text("FORMAT SALAH!\nContoh:\n/masaaktif 3 leon (8482606289) (-1003898960538)")
+            await msg.reply_text("FORMAT SALAH!")
             return
 
         uid = match[0].strip()
         gid = match[1].strip()
 
         group = get_group(gid)
+
+        # 🔥 FIX PENTING: pastikan key selalu ada
+        if "premium_users" not in group:
+            group["premium_users"] = {}
 
         group["premium_users"][uid] = {
             "name": name,
@@ -326,6 +329,7 @@ async def masaaktif(update, context):
 
     except Exception as e:
         await msg.reply_text(f"ERROR MASA AKTIF:\n{e}")
+        
 async def cekmasaaktif(update, context):
     msg = update.message
     uid = str(msg.from_user.id)
