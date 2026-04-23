@@ -287,7 +287,6 @@ async def cekmasaaktif(update, context):
     await msg.reply_text("EXPIRED / TIDAK PREMIUM")
 
 async def listpremium(update, context):
-async def listpremium(update, context):
     msg = update.message
 
     text = "LIST PREMIUM:\n"
