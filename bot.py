@@ -15,7 +15,6 @@ client = MongoClient(MONGO_URI)
 db = client["telegram_bot"]
 groups_col = db["groups"]
 
-
 def get_group(chat_id):
     chat_id = str(chat_id)
     group = groups_col.find_one({"chat_id": chat_id})
@@ -34,28 +33,25 @@ def get_group(chat_id):
 
     return group
 
-
 def save_group(group):
     groups_col.update_one(
         {"chat_id": group["chat_id"]},
         {"$set": group}
     )
 
-
 # ================= HELPER =================
 def is_owner(user_id):
     return user_id == OWNER_ID
 
-
 def is_group_active(group):
     return len(group.get("allowed_users", {})) > 0
 
-
 def is_allowed(user_id, group):
+    if user_id == OWNER_ID:
+        return True
     if not is_group_active(group):
         return False
-    return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
-
+    return str(user_id) in group.get("allowed_users", {})
 
 # ================= DELAY DELETE =================
 async def delay_delete(msg, delay):
@@ -64,7 +60,6 @@ async def delay_delete(msg, delay):
         await msg.delete()
     except:
         pass
-
 
 # ================= AUTO DELETE =================
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -83,7 +78,6 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group = get_group(msg.chat.id)
 
-    # ===== BOT OFF =====
     if not is_group_active(group):
         return
 
@@ -111,16 +105,13 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
-
 # ================= COMMAND TARGET =================
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
     if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text(
-            f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}"
-        )
+        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
         return
 
     if not msg.reply_to_message or not context.args:
@@ -145,15 +136,12 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     asyncio.create_task(delay_delete(msg, 2))
     asyncio.create_task(delay_delete(bot_msg, 3))
 
-
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
     if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text(
-            f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}"
-        )
+        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗔𝗡𝗝𝗜𝗡𝗚 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
         return
 
     if not context.args:
@@ -170,7 +158,6 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             asyncio.create_task(delay_delete(msg, 2))
             asyncio.create_task(delay_delete(bot_msg, 3))
             return
-
 
 # ================= LIST TARGET =================
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -202,7 +189,6 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
-
 # ================= ADMIN =================
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -224,7 +210,6 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot_msg = await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
     asyncio.create_task(delay_delete(msg, 2))
     asyncio.create_task(delay_delete(bot_msg, 3))
-
 
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -249,8 +234,6 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
-
-# ================= DELUSER (UPDATED) =================
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
@@ -276,7 +259,6 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
             asyncio.create_task(delay_delete(bot_msg, 3))
             return
 
-
 # ================= FILTER TEXT =================
 async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -301,7 +283,6 @@ async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await msg.reply_text("SUDAH ADA DI LIST BEGO")
 
-
 async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -324,7 +305,6 @@ async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
         asyncio.create_task(delay_delete(bot_msg, 3))
     else:
         await msg.reply_text("TIDAK ADA DI LIST BEGO")
-
 
 # ================= ALLTEXT =================
 async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -356,7 +336,6 @@ async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
-
 # ================= FILTER TEXT TOGGLE =================
 async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -378,7 +357,6 @@ async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_group(group)
     asyncio.create_task(delay_delete(msg, 2))
     asyncio.create_task(delay_delete(bot_msg, 3))
-
 
 # ================= FILTER FOTO =================
 async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -402,7 +380,6 @@ async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     asyncio.create_task(delay_delete(msg, 2))
     asyncio.create_task(delay_delete(bot_msg, 3))
 
-
 # ================= DELETE ON/OFF =================
 async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -425,11 +402,9 @@ async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     asyncio.create_task(delay_delete(msg, 2))
     asyncio.create_task(delay_delete(bot_msg, 3))
 
-
 # ================= HANDLE =================
 async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await auto_delete(update, context)
-
 
 # ================= MAIN =================
 app = ApplicationBuilder().token(TOKEN).build()
