@@ -1,6 +1,5 @@
 import os
 import asyncio
-from datetime import datetime
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from pymongo import MongoClient
@@ -28,7 +27,7 @@ def get_group(chat_id):
             "filter_text": False,
             "filter_foto": False,
             "delete_on": False,
-            "masaaktif": {}
+            "masaaktif": {}  # uid -> tanggal
         }
         groups_col.insert_one(group)
 
@@ -51,14 +50,12 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group = get_group(msg.chat.id)
 
-    # DELETEPESAN ON
     if group.get("delete_on"):
         try:
             await msg.delete()
         except:
             pass
 
-    # FILTER TEXT
     if group["filter_text"] and msg.text:
         if msg.text.lower().strip() in group["texts"]:
             try:
@@ -66,7 +63,6 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except:
                 pass
 
-    # FILTER FOTO
     if group["filter_foto"] and msg.photo:
         try:
             await msg.delete()
@@ -74,7 +70,7 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
 
-# ================= ADD =================
+# ================= ADD TARGET =================
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -85,16 +81,16 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not msg.reply_to_message:
         return
 
-    target = msg.reply_to_message.from_user
+    user = msg.reply_to_message.from_user
     name = context.args[0].lower()
 
-    group["targets"][str(target.id)] = name
+    group["targets"][str(user.id)] = name
     save_group(group)
 
     await msg.reply_text("𝗔𝗗𝗗 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧✅")
 
 
-# ================= DELETE =================
+# ================= DELETE TARGET =================
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -120,10 +116,10 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not msg.reply_to_message:
         return
 
-    target = msg.reply_to_message.from_user
+    user = msg.reply_to_message.from_user
     name = context.args[0].lower()
 
-    group["allowed_users"][str(target.id)] = name
+    group["allowed_users"][str(user.id)] = name
     save_group(group)
 
     await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧✅")
@@ -170,7 +166,7 @@ async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text)
 
 
-# ================= LISTUSER =================
+# ================= LISTUSER (FIX STRUCTURE BARU) =================
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n\n"
 
@@ -195,6 +191,7 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
     text = " ".join(context.args).lower()
+
     group["texts"].append(text)
     save_group(group)
 
@@ -204,8 +201,10 @@ async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
     text = " ".join(context.args).lower()
-    group["texts"].remove(text)
-    save_group(group)
+
+    if text in group["texts"]:
+        group["texts"].remove(text)
+        save_group(group)
 
     await update.message.reply_text("𝗧𝗘𝗫𝗧 𝗗𝗜𝗛𝗔𝗣𝗨𝗦")
 
@@ -243,7 +242,7 @@ async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
 
 
-# ================= MASAAKTIF =================
+# ================= MASAAKTIF (FIX STABLE) =================
 async def masaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(update.message.from_user.id):
         return
@@ -256,6 +255,7 @@ async def masaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
     date = " ".join(context.args).lower()
 
     group = get_group(update.message.chat.id)
+
     group["masaaktif"][uid] = date
     save_group(group)
 
