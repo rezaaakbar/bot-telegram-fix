@@ -191,6 +191,51 @@ async def adduser(update, context):
 
 async def deluser(update, context):
     msg = update.message
+
+    # ================= PRIVATE MODE =================
+    if msg.chat.type == "private":
+
+        if len(context.args) < 1:
+            return await msg.reply_text("FORMAT: /deluser nama")
+
+        name = context.args[0].lower()
+
+        found = False
+
+        # cari di semua grup
+        for g in groups_col.find():
+
+            changed = False
+
+            for uid, n in list(g.get("allowed_users", {}).items()):
+                if n == name:
+
+                    # hapus dari allowed_users
+                    del g["allowed_users"][uid]
+
+                    # sync premium
+                    if uid in g.get("premium_users", {}):
+                        del g["premium_users"][uid]
+
+                    # sync target
+                    if uid in g.get("targets", {}):
+                        del g["targets"][uid]
+
+                    changed = True
+                    found = True
+
+            if changed:
+                groups_col.update_one(
+                    {"chat_id": g["chat_id"]},
+                    {"$set": g}
+                )
+
+        if found:
+            return await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗦𝗘𝗠𝗨𝗔 𝗚𝗥𝗨𝗣 ✅")
+
+        return await msg.reply_text("USER TIDAK DITEMUKAN")
+
+    # ================= GROUP MODE =================
     g = get_group(msg.chat.id)
 
     if not is_allowed(msg.from_user.id, g):
@@ -201,14 +246,11 @@ async def deluser(update, context):
     for uid, n in list(g["allowed_users"].items()):
         if n == name:
 
-            # ❌ hapus dari allowed user
             del g["allowed_users"][uid]
 
-            # ❌ hapus dari premium
             if uid in g.get("premium_users", {}):
                 del g["premium_users"][uid]
 
-            # ❌ hapus dari target
             if uid in g.get("targets", {}):
                 del g["targets"][uid]
 
@@ -216,6 +258,8 @@ async def deluser(update, context):
 
             await success(msg, RESP["deluser"])
             return
+
+    await msg.reply_text("USER TIDAK DITEMUKAN")
 
 async def listuser(update, context):
     msg = update.message
