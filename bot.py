@@ -16,6 +16,10 @@ client = MongoClient(MONGO_URI)
 db = client["telegram_bot"]
 groups_col = db["groups"]
 
+# ================= STATE SEWA =================
+user_state = {}
+SEWA_PRICE = 5000
+
 def get_group(chat_id):
     chat_id = str(chat_id)
     group = groups_col.find_one({"chat_id": chat_id})
@@ -68,34 +72,48 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "KALAU MAU SEWA TINGGAL KETIK YAW🥰"
     )
 
-# ================= SEWA =================
-async def sewa(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ================= SEWABOT (NEW FEATURE) =================
+async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
     if msg.chat.type != "private":
         return
 
-    if not is_owner(msg.from_user.id):
+    user_state[msg.from_user.id] = "wait_week"
+
+    await msg.reply_text(
+        "📦 SEWA BOT KINGZAA\n\n"
+        "💰 1 MINGGU = 5K\n"
+        "KIRIM ANGKA MINGGU YANG MAU DIBELI\n\n"
+        "Contoh: 10"
+    )
+
+# ================= INPUT HANDLER SEWA =================
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    user_id = msg.from_user.id
+
+    if msg.chat.type != "private":
         return
 
-    if not context.args:
-        await msg.reply_text("Contoh: /sewa -100xxxx (1 minggu = 5k)")
+    if user_state.get(user_id) != "wait_week":
         return
 
-    group_id = context.args[0]
-    group = get_group(group_id)
+    if not msg.text.isdigit():
+        await msg.reply_text("KIRIM ANGKA AJA CONTOH: 5 / 10")
+        return
 
-    now = int(time.time())
-    week = 7 * 24 * 60 * 60
+    week = int(msg.text)
+    total = week * SEWA_PRICE
 
-    if group.get("expired_at", 0) > now:
-        group["expired_at"] += week
-    else:
-        group["expired_at"] = now + week
+    user_state[user_id] = None
 
-    save_group(group)
-
-    await msg.reply_text("SEWA AKTIF 1 MINGGU ✅")
+    await msg.reply_text(
+        "💳 PAYMENT KINGZAA\n\n"
+        "DANA: 08888604716 AKBAR\n"
+        f"NOMINAL: Rp {total}\n\n"
+        f"KIRIM BUKTI KE {OWNER_USERNAME}"
+    )
 
 # ================= AUTO DELETE =================
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -106,15 +124,6 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group = get_group(msg.chat.id)
 
-    # expired check
-    if group.get("expired_at", 0) != 0:
-        if int(time.time()) > group["expired_at"]:
-            return
-
-    if not msg.from_user:
-        return
-
-    # delete target
     if group["delete_on"]:
         if str(msg.from_user.id) in group["targets"]:
             try:
@@ -123,7 +132,6 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except:
                 pass
 
-    # filter text
     if group["filter_text"] and msg.text:
         if msg.text.lower().strip() in group["texts"]:
             try:
@@ -132,7 +140,6 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except:
                 pass
 
-    # filter foto
     if group["filter_foto"] and msg.photo:
         try:
             await msg.delete()
@@ -140,43 +147,31 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
-# ================= ADD =================
+# ================= COMMAND ADD =================
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
     if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text(f"IZIN DULU {OWNER_USERNAME}")
         return
 
     if not msg.reply_to_message or not context.args:
         return
 
-    target_user = msg.reply_to_message.from_user
-    target_id = str(target_user.id)
+    target_id = str(msg.reply_to_message.from_user.id)
     name = context.args[0].lower()
-
-    if target_user.id == OWNER_ID:
-        await msg.reply_text("ITU BOSS GUA 😹")
-        return
 
     group["targets"][target_id] = name
     save_group(group)
 
-    bot_msg = await msg.reply_text("BERHASIL DITAMBAHKAN")
-    asyncio.create_task(delay_delete(msg, 2))
-    asyncio.create_task(delay_delete(bot_msg, 3))
+    await msg.reply_text("BERHASIL DITAMBAH")
 
-# ================= DELETE =================
+# ================= COMMAND DELETE =================
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
     if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text(f"IZIN DULU {OWNER_USERNAME}")
-        return
-
-    if not context.args:
         return
 
     name = context.args[0].lower()
@@ -185,10 +180,7 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if uname == name:
             del group["targets"][uid]
             save_group(group)
-
-            bot_msg = await msg.reply_text("BERHASIL DIHAPUS")
-            asyncio.create_task(delay_delete(msg, 2))
-            asyncio.create_task(delay_delete(bot_msg, 3))
+            await msg.reply_text("BERHASIL DIHAPUS")
             return
 
 # ================= LISTUSN =================
@@ -196,16 +188,13 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
-    if not is_allowed(msg.from_user.id, group):
-        return
-
-    text = "LIST TARGET:\n"
+    text = ""
     for i, (uid, name) in enumerate(group["targets"].items(), 1):
-        text += f"{i}. {name} ({uid})\n"
+        text += f"{i}. {name}\n"
 
-    await msg.reply_text(text)
+    await msg.reply_text(text or "KOSONG")
 
-# ================= ADDUSER =================
+# ================= ADMIN =================
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -213,11 +202,8 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(msg.from_user.id):
         return
 
-    if not msg.reply_to_message or not context.args:
-        return
-
-    name = context.args[0].lower()
     uid = str(msg.reply_to_message.from_user.id)
+    name = context.args[0].lower()
 
     group["allowed_users"][uid] = name
     save_group(group)
@@ -229,14 +215,11 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
-    if not is_owner(msg.from_user.id):
-        return
-
-    text = "LIST USER:\n"
+    text = ""
     for uid, name in group["allowed_users"].items():
         text += f"- {name}\n"
 
-    await msg.reply_text(text)
+    await msg.reply_text(text or "KOSONG")
 
 # ================= DELUSER =================
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -245,11 +228,7 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(msg.from_user.id):
         return
 
-    if not context.args:
-        return
-
     target = context.args[0].lower()
-
     group = get_group(msg.chat.id)
 
     for uid, name in list(group["allowed_users"].items()):
@@ -259,7 +238,7 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text("USER DIHAPUS")
             return
 
-# ================= ADDTEXT =================
+# ================= TEXT =================
 async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -271,7 +250,6 @@ async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_group(group)
         await msg.reply_text("TEXT DITAMBAH")
 
-# ================= DELTEXT =================
 async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -283,43 +261,31 @@ async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_group(group)
         await msg.reply_text("TEXT DIHAPUS")
 
-# ================= ALLTEXT =================
 async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
     text = "\n".join(group["texts"])
-    await msg.reply_text(text if text else "KOSONG")
+    await msg.reply_text(text or "KOSONG")
 
-# ================= FILTER TEXT =================
+# ================= FILTER =================
 async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    group = get_group(msg.chat.id)
-
+    group = get_group(update.message.chat.id)
     group["filter_text"] = context.args[0] == "on"
     save_group(group)
+    await update.message.reply_text("OK")
 
-    await msg.reply_text("OK")
-
-# ================= FILTER FOTO =================
 async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    group = get_group(msg.chat.id)
-
+    group = get_group(update.message.chat.id)
     group["filter_foto"] = context.args[0] == "on"
     save_group(group)
+    await update.message.reply_text("OK")
 
-    await msg.reply_text("OK")
-
-# ================= DELETE PESAN =================
 async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    group = get_group(msg.chat.id)
-
+    group = get_group(update.message.chat.id)
     group["delete_on"] = context.args[0] == "on"
     save_group(group)
-
-    await msg.reply_text("OK")
+    await update.message.reply_text("OK")
 
 # ================= HANDLE =================
 async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -329,7 +295,7 @@ async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("sewa", sewa))
+app.add_handler(CommandHandler("sewabot", sewabot))
 
 app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("delete", delete))
