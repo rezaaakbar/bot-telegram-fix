@@ -136,25 +136,21 @@ async def success(msg, text):
 async def tambahmasaaktif(update, context):
     msg = update.message
 
-# PRIVATE ONLY CHECK
-if msg.chat.type != "private":
-    return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
+    # PRIVATE ONLY CHECK
+    if msg.chat.type != "private":
+        return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
 
-    if len(context.args) < 2:
-        return await msg.reply_text("FORMAT: /tambahmasaaktif nama hari")
-
+    # lanjut logic kamu di bawah ini
     name = context.args[0].lower()
     add_days = int(context.args[1])
 
     now = time.time()
 
     for g in groups_col.find():
-
         if "premium_users" not in g:
             continue
 
         for uid, data in g["premium_users"].items():
-
             if data["name"] == name:
 
                 if data["expire"] == -1:
@@ -170,21 +166,14 @@ if msg.chat.type != "private":
                     {"$set": g}
                 )
 
-                return await msg.reply_text(
-                    f"BERHASIL TAMBAH MASA AKTIF\nNAMA: {name}\nTAMBAH: {add_days} HARI"
-                )
-
-    await msg.reply_text("USER TIDAK DITEMUKAN")
-
+                return await msg.reply_text("BERHASIL TAMBAH MASA AKTIF")
+                
 async def kurangmasaaktif(update, context):
     msg = update.message
 
-# PRIVATE ONLY CHECK
-if msg.chat.type != "private":
-    return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
-
-    if len(context.args) < 2:
-        return await msg.reply_text("FORMAT: /kurangmasaaktif nama hari")
+    # PRIVATE ONLY CHECK
+    if msg.chat.type != "private":
+        return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
 
     name = context.args[0].lower()
     reduce_days = int(context.args[1])
@@ -192,12 +181,10 @@ if msg.chat.type != "private":
     now = time.time()
 
     for g in groups_col.find():
-
         if "premium_users" not in g:
             continue
 
         for uid, data in g["premium_users"].items():
-
             if data["name"] == name:
 
                 if data["expire"] == -1:
@@ -215,11 +202,7 @@ if msg.chat.type != "private":
                     {"$set": g}
                 )
 
-                return await msg.reply_text(
-                    f"BERHASIL KURANG MASA AKTIF\nNAMA: {name}\nKURANG: {reduce_days} HARI"
-                )
-
-    await msg.reply_text("USER TIDAK DITEMUKAN")
+                return await msg.reply_text("BERHASIL KURANG MASA AKTIF")
     
 async def add(update, context):
     msg = update.message
