@@ -47,7 +47,13 @@ def is_owner(user_id):
     return user_id == OWNER_ID
 
 
+def is_group_active(group):
+    return len(group.get("allowed_users", {})) > 0
+
+
 def is_allowed(user_id, group):
+    if not is_group_active(group):
+        return False
     return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
 
 
@@ -76,6 +82,10 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
     group = get_group(msg.chat.id)
+
+    # ===== BOT OFF =====
+    if not is_group_active(group):
+        return
 
     if group["delete_on"]:
         if str(msg.from_user.id) in group["targets"]:
