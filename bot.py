@@ -31,9 +31,19 @@ RESP = {
     "deltext": "𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗟𝗜𝗦𝗧✅",
 }
 
-async def send(msg, text, delay=3):
-    await asyncio.sleep(delay)
-    await msg.reply_text(text)
+# ================= CLEAN SUCCESS =================
+async def clean_success(user_msg, bot_msg):
+    try:
+        await asyncio.sleep(2)
+        await user_msg.delete()
+    except:
+        pass
+
+    try:
+        await asyncio.sleep(1)
+        await bot_msg.delete()
+    except:
+        pass
 
 # ================= GROUP =================
 def get_group(chat_id):
@@ -59,9 +69,10 @@ def get_group(chat_id):
 def save_group(g):
     groups_col.update_one({"chat_id": g["chat_id"]}, {"$set": g})
 
-# ================= PREMIUM SYSTEM =================
+# ================= PREMIUM =================
 def clean_expired(g):
     now = time.time()
+
     if "premium_users" not in g:
         g["premium_users"] = {}
 
@@ -110,10 +121,16 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if g.get("filter_foto") and msg.photo:
             await msg.delete()
 
-    except Exception as e:
-        print("AUTO ERROR:", e)
+    except:
+        pass
 
-# ================= COMMAND TARGET =================
+# ================= COMMAND WRAPPER =================
+async def success(msg, text):
+    bot_msg = await msg.reply_text(text)
+    await clean_success(msg, bot_msg)
+
+# ================= COMMANDS =================
+
 async def add(update, context):
     msg = update.message
     g = get_group(msg.chat.id)
@@ -126,7 +143,8 @@ async def add(update, context):
 
     g["targets"][uid] = name
     save_group(g)
-    await send(msg, RESP["add"])
+
+    await success(msg, RESP["add"])
 
 async def delete(update, context):
     msg = update.message
@@ -141,7 +159,7 @@ async def delete(update, context):
         if n == name:
             del g["targets"][uid]
             save_group(g)
-            await send(msg, RESP["delete"])
+            await success(msg, RESP["delete"])
             return
 
 async def listusn(update, context):
@@ -154,7 +172,6 @@ async def listusn(update, context):
 
     await msg.reply_text(text)
 
-# ================= USER =================
 async def adduser(update, context):
     msg = update.message
     g = get_group(msg.chat.id)
@@ -167,7 +184,8 @@ async def adduser(update, context):
 
     g["allowed_users"][uid] = name
     save_group(g)
-    await send(msg, RESP["adduser"])
+
+    await success(msg, RESP["adduser"])
 
 async def deluser(update, context):
     msg = update.message
@@ -182,7 +200,7 @@ async def deluser(update, context):
         if n == name:
             del g["allowed_users"][uid]
             save_group(g)
-            await send(msg, RESP["deluser"])
+            await success(msg, RESP["deluser"])
             return
 
 async def listuser(update, context):
@@ -195,14 +213,14 @@ async def listuser(update, context):
 
     await msg.reply_text(text)
 
-# ================= TEXT =================
 async def addtext(update, context):
     msg = update.message
     g = get_group(msg.chat.id)
 
     g["texts"].append(" ".join(context.args).lower())
     save_group(g)
-    await send(msg, RESP["addtext"])
+
+    await success(msg, RESP["addtext"])
 
 async def deltext(update, context):
     msg = update.message
@@ -213,7 +231,7 @@ async def deltext(update, context):
     if t in g["texts"]:
         g["texts"].remove(t)
         save_group(g)
-        await send(msg, RESP["deltext"])
+        await success(msg, RESP["deltext"])
 
 async def alltext(update, context):
     msg = update.message
@@ -232,7 +250,8 @@ async def filtertext(update, context):
 
     g["filter_text"] = context.args[0] == "on"
     save_group(g)
-    await send(msg, RESP["delete_on"] if g["filter_text"] else RESP["delete_off"])
+
+    await success(msg, RESP["delete_on"] if g["filter_text"] else RESP["delete_off"])
 
 async def filterfoto(update, context):
     msg = update.message
@@ -240,7 +259,8 @@ async def filterfoto(update, context):
 
     g["filter_foto"] = context.args[0] == "on"
     save_group(g)
-    await send(msg, RESP["delete_on"] if g["filter_foto"] else RESP["delete_off"])
+
+    await success(msg, RESP["delete_on"] if g["filter_foto"] else RESP["delete_off"])
 
 async def deletepesan(update, context):
     msg = update.message
@@ -248,7 +268,8 @@ async def deletepesan(update, context):
 
     g["delete_on"] = context.args[0] == "on"
     save_group(g)
-    await send(msg, RESP["delete_on"] if g["delete_on"] else RESP["delete_off"])
+
+    await success(msg, RESP["delete_on"] if g["delete_on"] else RESP["delete_off"])
 
 # ================= PREMIUM =================
 async def masaaktif(update, context):
