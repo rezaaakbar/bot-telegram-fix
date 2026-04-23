@@ -464,6 +464,8 @@ async def sewabot_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     uid = q.from_user.id
 
+    await q.answer()  # WAJIB supaya bot tidak diam
+
     if uid not in sewa_state:
         sewa_state[uid] = 1
 
@@ -476,6 +478,10 @@ async def sewabot_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif q.data == "min":
         if week > 1:
             week -= 1
+
+    elif q.data == "info":
+        await q.answer("1 MINGGU = 5000", show_alert=True)
+        return
 
     elif q.data == "confirm":
         total = week * SEWA_PRICE
@@ -501,7 +507,6 @@ async def sewabot_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await q.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(keyboard))
-    await q.answer()
 
 # ================= HANDLE =================
 async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
