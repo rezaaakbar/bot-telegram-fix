@@ -464,50 +464,56 @@ async def sewabot_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     uid = q.from_user.id
 
-    await q.answer()  # WAJIB supaya bot tidak diam
+    await q.answer()  # WAJIB supaya tombol tidak freeze
 
     if uid not in sewa_state:
         sewa_state[uid] = 1
 
     week = sewa_state[uid]
 
-    if q.data == "plus":
-        if week < 50:
-            week += 1
+    try:
+        if q.data == "plus":
+            if week < 50:
+                week += 1
 
-    elif q.data == "min":
-        if week > 1:
-            week -= 1
+        elif q.data == "min":
+            if week > 1:
+                week -= 1
 
-    elif q.data == "info":
-        await q.answer("1 MINGGU = 5000", show_alert=True)
-        return
+        elif q.data == "info":
+            await q.answer("1 MINGGU = 5000", show_alert=True)
+            return
 
-    elif q.data == "confirm":
-        total = week * SEWA_PRICE
+        elif q.data == "confirm":
+            total = week * SEWA_PRICE
 
-        await q.message.edit_text(
-            "PAYMENT KINGZAA\n\n"
-            "DANA: 08888604716 AKBAR\n"
-            f"NOMINAL: {total}\n\n"
-            "KIRIM BUKTI KE @KINGZAAASLI"
+            await q.message.edit_text(
+                "PAYMENT KINGZAA\n\n"
+                "DANA: 08888604716 AKBAR\n"
+                f"NOMINAL: {total}\n\n"
+                "KIRIM BUKTI KE @KINGZAAASLI"
+            )
+            sewa_state.pop(uid, None)
+            return
+
+        sewa_state[uid] = week
+
+        keyboard = [
+            [
+                InlineKeyboardButton("-", callback_data="min"),
+                InlineKeyboardButton(f"{week} MINGGU", callback_data="info"),
+                InlineKeyboardButton("+", callback_data="plus")
+            ],
+            [InlineKeyboardButton("CONFIRM", callback_data="confirm")]
+        ]
+
+        await q.message.edit_reply_markup(
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
-        sewa_state.pop(uid, None)
-        return
 
-    sewa_state[uid] = week
-
-    keyboard = [
-        [
-            InlineKeyboardButton("-", callback_data="min"),
-            InlineKeyboardButton(f"{week} MINGGU", callback_data="info"),
-            InlineKeyboardButton("+", callback_data="plus")
-        ],
-        [InlineKeyboardButton("CONFIRM", callback_data="confirm")]
-    ]
-
-    await q.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(keyboard))
-
+    except Exception as e:
+        print("Callback error:", e)
+        await q.answer("ERROR", show_alert=True)
 # ================= HANDLE =================
 async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await auto_delete(update, context)
