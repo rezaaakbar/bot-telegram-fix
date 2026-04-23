@@ -293,24 +293,39 @@ async def deletepesan(update, context):
 async def masaaktif(update, context):
     msg = update.message
 
-    days = int(context.args[0])
-    name = context.args[1].lower()
+    try:
+        days = int(context.args[0])
+        name = context.args[1].lower()
 
-    match = re.findall(r"\((.*?)\)", msg.text)
-    uid = match[0]
-    gid = match[1]
+        # ambil (userid) dan (grupid) dengan aman
+        match = re.findall(r"\(([^)]+)\)", msg.text)
 
-    group = get_group(gid)
+        if len(match) < 2:
+            await msg.reply_text("FORMAT SALAH!\nContoh:\n/masaaktif 3 leon (8482606289) (-1003898960538)")
+            return
 
-    group["premium_users"][uid] = {
-        "name": name,
-        "expire": time.time() + (days * 86400)
-    }
+        uid = match[0].strip()
+        gid = match[1].strip()
 
-    save_group(group)
+        group = get_group(gid)
 
-    await msg.reply_text("MASA AKTIF BERHASIL")
+        group["premium_users"][uid] = {
+            "name": name,
+            "expire": time.time() + (days * 86400)
+        }
 
+        save_group(group)
+
+        await msg.reply_text(
+            f"✅ MASA AKTIF BERHASIL\n\n"
+            f"Nama: {name}\n"
+            f"UserID: {uid}\n"
+            f"Grup: {gid}\n"
+            f"Durasi: {days} hari"
+        )
+
+    except Exception as e:
+        await msg.reply_text(f"ERROR MASA AKTIF:\n{e}")
 async def cekmasaaktif(update, context):
     msg = update.message
     uid = str(msg.from_user.id)
