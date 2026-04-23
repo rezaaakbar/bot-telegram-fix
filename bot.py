@@ -39,21 +39,11 @@ def save_group(group):
         {"$set": group}
     )
 
-# ================= HELPER =================
-def is_owner(user_id):
-    return user_id == OWNER_ID
-
-def is_allowed(user_id, group):
-    return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
-
 # ================= AUTO DELETE =================
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
     if not msg or msg.chat.type == "private":
-        return
-
-    if not msg.from_user:
         return
 
     group = get_group(msg.chat.id)
@@ -80,95 +70,77 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if group["filter_foto"] and msg.photo:
         try:
             await msg.delete()
-            return
         except:
             pass
 
-# ================= MENU PRIVATE =================
+# ================= PRIVATE MENU =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.chat.type != "private":
         return
 
-    keyboard = [[KeyboardButton("📊 Menu")]]
+    keyboard = [
+        [KeyboardButton("💰 Sewa Bot")],
+        [KeyboardButton("📌 Info Bot")]
+    ]
+
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
     await update.message.reply_text(
-        "🤖 BOT AKTIF\nKlik menu di bawah",
+        "🤖 SELAMAT DATANG DI BOT\n\nPilih menu di bawah:",
         reply_markup=reply_markup
     )
 
-async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.chat.type != "private":
-        return
-
-    text = update.message.text
-
-    if text == "📊 Menu":
-        keyboard = [
-            [KeyboardButton("💰 Sewa Bot")],
-            [KeyboardButton("📌 Info Bot")]
-        ]
-
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-
-        await update.message.reply_text(
-            "📋 MENU BOT:",
-            reply_markup=reply_markup
-        )
-
 # ================= SEWA BOT =================
-async def sewa_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def sewa(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.chat.type != "private":
         return
 
     if update.message.text == "💰 Sewa Bot":
-        keyboard = [
-            [KeyboardButton("1 Minggu - 5K")],
-            [KeyboardButton("2 Minggu - 10K")],
-            [KeyboardButton("3 Minggu - 15K")],
-            [KeyboardButton("4 Minggu - 20K")],
-            [KeyboardButton("⬅️ Kembali")]
-        ]
-
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-
         await update.message.reply_text(
-            "💰 Pilih Paket Sewa:",
-            reply_markup=reply_markup
-        )
+            f"""💰 SEWA BOT
 
-async def pilih_sewa(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.chat.type != "private":
-        return
-
-    text = update.message.text
-
-    if "Minggu" in text:
-        minggu = int(text.split()[0])
-        harga = minggu * 5000
-
-        await update.message.reply_text(
-            f"""📦 DETAIL SEWA
-
-Durasi: {minggu} Minggu
-Harga: Rp {harga}
+Harga:
+1 Minggu = 5K
+2 Minggu = 10K
+3 Minggu = 15K
+4 Minggu = 20K
 
 💳 Pembayaran:
 DANA: 08xxxx
 
-📌 Kirim SS (bukti transfer) ke owner:
+📌 Kirim bukti transfer ke:
 {OWNER_USERNAME}
 """
         )
 
-async def kembali(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ================= INFO BOT =================
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.chat.type != "private":
         return
 
-    if update.message.text == "⬅️ Kembali":
-        await start(update, context)
+    if update.message.text == "📌 Info Bot":
+        await update.message.reply_text(
+            """📌 INFO BOT
+
+Bot ini memiliki fitur:
+- Auto Delete Target
+- Filter Text
+- Filter Foto
+- Management User
+
+📌 Cara Pakai:
+Tambahkan bot ke grup
+Lalu aktifkan fitur sesuai kebutuhan
+
+📞 Owner:
+@KINGZAAASLI
+"""
+        )
 
 # ================= COMMAND GROUP =================
+def is_allowed(user_id, group):
+    return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
+
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -224,17 +196,4 @@ async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ================= MAIN =================
 app = ApplicationBuilder().token(TOKEN).build()
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("add", add))
-app.add_handler(CommandHandler("delete", delete))
-app.add_handler(CommandHandler("deletepesan", deletepesan))
-
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, menu))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, sewa_button))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, pilih_sewa))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, kembali))
-
-app.add_handler(MessageHandler(~filters.COMMAND, handle_all), group=1)
-
-print("BOT RUNNING...")
-app.run_polling()
+app
