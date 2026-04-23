@@ -287,26 +287,27 @@ async def masaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = msg.text
 
-    # ambil format: /masaaktif 3 (user) (group)
+    # ambil isi dalam ()
     match = re.findall(r"\((.*?)\)", text)
 
-    if len(context.args) < 1 or len(match) < 2:
+    if len(context.args) < 2 or len(match) < 2:
         await msg.reply_text(
-            "FORMAT SALAH\n\n"
+            "❌ FORMAT SALAH\n\n"
             "Gunakan:\n"
-            "/masaaktif 3 (user_id) (group_id)\n\n"
+            "/masaaktif <hari> <nama> (user_id) (group_id)\n\n"
             "Contoh:\n"
-            "/masaaktif 3 (6818257079) (-1003898960538)"
+            "/masaaktif 3 zaa (6818257079) (-1003898960538)"
         )
         return
 
     days = int(context.args[0])
+    name = context.args[1].lower()
     user_id = match[0]
     chat_id = match[1]
 
     group = get_group(chat_id)
 
-    # set expire time
+    # set expire
     group["group_expire"] = asyncio.get_event_loop().time() + (days * 86400)
 
     # simpan premium user
@@ -314,14 +315,16 @@ async def masaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
         group["premium_users"] = {}
 
     group["premium_users"][user_id] = {
+        "name": name,
         "days": days
     }
 
     save_group(group)
 
     await msg.reply_text(
-        f"✅ MASA AKTIF BERHASIL\n"
-        f"User: {user_id}\n"
+        f"✅ MASA AKTIF BERHASIL\n\n"
+        f"Nama: {name}\n"
+        f"UserID: {user_id}\n"
         f"Grup: {chat_id}\n"
         f"Durasi: {days} hari"
     )
