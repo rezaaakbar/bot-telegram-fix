@@ -146,7 +146,7 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         group = get_group(msg.chat.id)
 
-    text = "LIST TARGET:\n\n"
+    text = "𝐋𝐈𝐒𝐓 𝐓𝐀𝐑𝐆𝐄𝐓:\n\n"
     for uid, name in group["targets"].items():
         text += f"{name} ({uid})\n"
 
@@ -190,7 +190,7 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(update.message.from_user.id):
         return await update.message.reply_text(f"KHUSUS OWNER {OWNER_USERNAME}")
 
-    text = "LIST USER:\n\n"
+    text = "𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n\n"
 
     for g in groups_col.find():
         if g.get("allowed_users"):
@@ -233,7 +233,7 @@ async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         group = get_group(msg.chat.id)
 
-    text = "ALLTEXT:\n\n"
+    text = "𝐋𝐈𝐒𝐓 𝐓𝐄𝐗𝐓:\n\n"
     for i, t in enumerate(group["texts"], 1):
         text += f"{i}. {t}\n"
 
