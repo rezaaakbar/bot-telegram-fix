@@ -133,6 +133,94 @@ async def success(msg, text):
     await clean_success(msg, bot_msg)
 
 # ================= COMMANDS =================
+async def tambahmasaaktif(update, context):
+    msg = update.message
+
+# PRIVATE ONLY CHECK
+if msg.chat.type != "private":
+    return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
+
+    if len(context.args) < 2:
+        return await msg.reply_text("FORMAT: /tambahmasaaktif nama hari")
+
+    name = context.args[0].lower()
+    add_days = int(context.args[1])
+
+    now = time.time()
+
+    for g in groups_col.find():
+
+        if "premium_users" not in g:
+            continue
+
+        for uid, data in g["premium_users"].items():
+
+            if data["name"] == name:
+
+                if data["expire"] == -1:
+                    return await msg.reply_text("USER SELAMANYA TIDAK BISA DIUBAH")
+
+                remaining = data["expire"] - now
+                new_expire = now + remaining + (add_days * 86400)
+
+                g["premium_users"][uid]["expire"] = new_expire
+
+                groups_col.update_one(
+                    {"chat_id": g["chat_id"]},
+                    {"$set": g}
+                )
+
+                return await msg.reply_text(
+                    f"BERHASIL TAMBAH MASA AKTIF\nNAMA: {name}\nTAMBAH: {add_days} HARI"
+                )
+
+    await msg.reply_text("USER TIDAK DITEMUKAN")
+
+async def kurangmasaaktif(update, context):
+    msg = update.message
+
+# PRIVATE ONLY CHECK
+if msg.chat.type != "private":
+    return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
+
+    if len(context.args) < 2:
+        return await msg.reply_text("FORMAT: /kurangmasaaktif nama hari")
+
+    name = context.args[0].lower()
+    reduce_days = int(context.args[1])
+
+    now = time.time()
+
+    for g in groups_col.find():
+
+        if "premium_users" not in g:
+            continue
+
+        for uid, data in g["premium_users"].items():
+
+            if data["name"] == name:
+
+                if data["expire"] == -1:
+                    return await msg.reply_text("USER SELAMANYA TIDAK BISA DIKURANGI")
+
+                new_expire = data["expire"] - (reduce_days * 86400)
+
+                if new_expire <= now:
+                    del g["premium_users"][uid]
+                else:
+                    g["premium_users"][uid]["expire"] = new_expire
+
+                groups_col.update_one(
+                    {"chat_id": g["chat_id"]},
+                    {"$set": g}
+                )
+
+                return await msg.reply_text(
+                    f"BERHASIL KURANG MASA AKTIF\nNAMA: {name}\nKURANG: {reduce_days} HARI"
+                )
+
+    await msg.reply_text("USER TIDAK DITEMUKAN")
+    
 async def add(update, context):
     msg = update.message
     g = get_group(msg.chat.id)
@@ -422,6 +510,8 @@ async def listpremium(update, context):
 # ================= MAIN =================
 app = ApplicationBuilder().token(TOKEN).build()
 
+app.add_handler(CommandHandler("tambahmasaaktif", tambahmasaaktif))
+app.add_handler(CommandHandler("kurangmasaaktif", kurangmasaaktif))
 app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("delete", delete))
 app.add_handler(CommandHandler("listusn", listusn))
