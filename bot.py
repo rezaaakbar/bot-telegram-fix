@@ -64,16 +64,16 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not msg.from_user:
         return
 
-    group = get_group(msg.chat.id)
-
-    # bot mati kalau allowed_users kosong
-    if not group.get("allowed_users"):
-        return
-
     if msg.text:
         cmd = msg.text.split()[0].lower()
         if cmd in ["/listusn", "/listuser", "/alltext"]:
             return
+
+    group = get_group(msg.chat.id)
+
+    # bot mati kalau tidak ada allowed user
+    if not group.get("allowed_users"):
+        return
 
     if group["delete_on"]:
         if str(msg.from_user.id) in group["targets"]:
@@ -178,7 +178,7 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
         group = get_group(context.args[0])
 
     if not group["targets"]:
-        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝘿 𝘿𝙐𝙇𝗨🤬")
+        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝘿 𝘿𝙐𝙇𝙐🤬")
         return
 
     text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
@@ -232,7 +232,7 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
-# ================= DELUSER =================
+# ================= DELUSER (FIX PRIVATE + GROUP) =================
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
@@ -243,15 +243,17 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         return
 
+    # PRIVATE: /deluser -100xxxx nama
     if msg.chat.type == "private":
         if len(context.args) < 2:
-            await msg.reply_text("FORMAT SALAH\nContoh: /deluser -100xxxx nama")
             return
 
         chat_id = context.args[0]
         target = context.args[1].lower()
         group = get_group(chat_id)
+
     else:
+        # GROUP: /deluser nama
         target = context.args[0].lower()
         group = get_group(msg.chat.id)
 
@@ -342,7 +344,7 @@ async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
-# ================= FILTER TOGGLE =================
+# ================= FILTER TEXT TOGGLE =================
 async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -364,6 +366,7 @@ async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     asyncio.create_task(delay_delete(msg, 2))
     asyncio.create_task(delay_delete(bot_msg, 3))
 
+# ================= FILTER FOTO =================
 async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -430,7 +433,7 @@ app.add_handler(CommandHandler("filterfoto", filterfoto))
 
 app.add_handler(CommandHandler("deletepesan", deletepesan))
 
-app.add_handler(MessageHandler(filters.ALL, handle_all), group=1)
+app.add_handler(MessageHandler(~filters.COMMAND, handle_all), group=1)
 
 print("BOT RUNNING...")
 app.run_polling()
