@@ -243,19 +243,27 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         return
 
-    # PRIVATE: /deluser -100xxxx nama
+    target = context.args[0].lower()
+
+    # ================= PRIVATE =================
     if msg.chat.type == "private":
-        if len(context.args) < 2:
-            return
+        found = False
 
-        chat_id = context.args[0]
-        target = context.args[1].lower()
-        group = get_group(chat_id)
+        for group in groups_col.find():
+            for uid, name in list(group.get("allowed_users", {}).items()):
+                if name == target:
+                    del group["allowed_users"][uid]
+                    save_group(group)
+                    found = True
 
-    else:
-        # GROUP: /deluser nama
-        target = context.args[0].lower()
-        group = get_group(msg.chat.id)
+        if found:
+            bot_msg = await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦✅")
+            asyncio.create_task(delay_delete(msg, 2))
+            asyncio.create_task(delay_delete(bot_msg, 3))
+        return
+
+    # ================= GROUP =================
+    group = get_group(msg.chat.id)
 
     for uid, name in list(group["allowed_users"].items()):
         if name == target:
