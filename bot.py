@@ -15,7 +15,6 @@ client = MongoClient(MONGO_URI)
 db = client["telegram_bot"]
 groups_col = db["groups"]
 
-
 def get_group(chat_id):
     chat_id = str(chat_id)
     group = groups_col.find_one({"chat_id": chat_id})
@@ -34,22 +33,18 @@ def get_group(chat_id):
 
     return group
 
-
 def save_group(group):
     groups_col.update_one(
         {"chat_id": group["chat_id"]},
         {"$set": group}
     )
 
-
 # ================= HELPER =================
 def is_owner(user_id):
     return user_id == OWNER_ID
 
-
 def is_allowed(user_id, group):
     return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
-
 
 # ================= DELAY DELETE =================
 async def delay_delete(msg, delay):
@@ -58,7 +53,6 @@ async def delay_delete(msg, delay):
         await msg.delete()
     except:
         pass
-
 
 # ================= AUTO DELETE =================
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -72,7 +66,7 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group = get_group(msg.chat.id)
 
-    # ❗ BOT MATI kalau tidak ada allowed user
+    # bot mati kalau allowed_users kosong
     if not group.get("allowed_users"):
         return
 
@@ -104,7 +98,6 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         except:
             pass
-
 
 # ================= COMMAND TARGET =================
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -139,7 +132,6 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     asyncio.create_task(delay_delete(msg, 2))
     asyncio.create_task(delay_delete(bot_msg, 3))
 
-
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -165,7 +157,6 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             asyncio.create_task(delay_delete(bot_msg, 3))
             return
 
-
 # ================= LIST TARGET =================
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -187,7 +178,7 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
         group = get_group(context.args[0])
 
     if not group["targets"]:
-        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝘿 𝘿𝙐𝙇𝙐🤬")
+        await msg.reply_text("𝙈𝘼𝙎𝙄𝙃 𝙆𝙊𝙎𝙊𝙉𝙂 /𝙖𝙙𝘿 𝘿𝙐𝙇𝗨🤬")
         return
 
     text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
@@ -195,7 +186,6 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text += f"{i}. {name} ({uid})\n"
 
     await msg.reply_text(text)
-
 
 # ================= ADMIN =================
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -218,7 +208,6 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot_msg = await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧✅")
     asyncio.create_task(delay_delete(msg, 2))
     asyncio.create_task(delay_delete(bot_msg, 3))
-
 
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -243,8 +232,7 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
-
-# ================= DELUSER (FIX) =================
+# ================= DELUSER =================
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
@@ -264,9 +252,8 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
         target = context.args[1].lower()
         group = get_group(chat_id)
     else:
-        chat_id = msg.chat.id
         target = context.args[0].lower()
-        group = get_group(chat_id)
+        group = get_group(msg.chat.id)
 
     for uid, name in list(group["allowed_users"].items()):
         if name == target:
@@ -278,9 +265,151 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
             asyncio.create_task(delay_delete(bot_msg, 3))
             return
 
+# ================= FILTER TEXT =================
+async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    group = get_group(msg.chat.id)
 
-# ================= FILTER & DLL (TETAP) =================
-# (semua function bawah tetap sama persis seperti script awal lu)
+    if not is_allowed(msg.from_user.id, group):
+        return
+
+    if not context.args:
+        await msg.reply_text("𝗧𝗘𝗫𝗧 𝗡𝗬𝗔 𝗠𝗔𝗦𝗨𝗞𝗜𝗡 𝗗𝗨𝗟𝗨 𝗕𝗢𝗦𝗦🥰")
+        return
+
+    text = " ".join(context.args).lower().strip()
+
+    if text not in group["texts"]:
+        group["texts"].append(text)
+        save_group(group)
+
+        bot_msg = await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡✅")
+        asyncio.create_task(delay_delete(msg, 2))
+        asyncio.create_task(delay_delete(bot_msg, 3))
+    else:
+        await msg.reply_text("SUDAH ADA DI LIST BEGO")
+
+async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    group = get_group(msg.chat.id)
+
+    if not is_allowed(msg.from_user.id, group):
+        return
+
+    if not context.args:
+        await msg.reply_text("𝗧𝗘𝗫𝗧 𝗡𝗬𝗔 𝗠𝗔𝗦𝗨𝗞𝗜𝗡 𝗗𝗨𝗟𝗨 𝗕𝗢𝗦𝗦🥰")
+        return
+
+    text = " ".join(context.args).lower().strip()
+
+    if text in group["texts"]:
+        group["texts"].remove(text)
+        save_group(group)
+
+        bot_msg = await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗛𝗔𝗣𝗨𝗦✅")
+        asyncio.create_task(delay_delete(msg, 2))
+        asyncio.create_task(delay_delete(bot_msg, 3))
+    else:
+        await msg.reply_text("TIDAK ADA DI LIST BEGO")
+
+# ================= ALLTEXT =================
+async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    group = get_group(msg.chat.id)
+
+    if not is_allowed(msg.from_user.id, group):
+        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+        return
+
+    if msg.chat.type == "private":
+        if not is_owner(msg.from_user.id):
+            await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗔 𝗠𝗘𝗞𝗜😹")
+            return
+
+        if not context.args:
+            await msg.reply_text("MASUKIN ID GRUP NYA BEGO\nContoh: /alltext -100xxxx")
+            return
+
+        group = get_group(context.args[0])
+
+    if not group["texts"]:
+        await msg.reply_text("𝗠𝗔𝗦𝗜𝗛 𝗞𝗢𝗦𝗢𝗡𝗚 𝗜𝗡𝗜 𝗕𝗢𝗦𝗦 𝗧𝗔𝗠𝗕𝗔𝗛𝗜𝗡 𝗗𝗨𝗟𝗨 𝗧𝗘𝗞𝗦𝗡𝗬𝗔🥰")
+        return
+
+    text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
+    for i, t in enumerate(group["texts"], 1):
+        text += f"{i}. {t}\n"
+
+    await msg.reply_text(text)
+
+# ================= FILTER TOGGLE =================
+async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    group = get_group(msg.chat.id)
+
+    if not is_allowed(msg.from_user.id, group):
+        return
+
+    if not context.args:
+        return
+
+    if context.args[0] == "on":
+        group["filter_text"] = True
+        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗧𝗘𝗫𝗧 𝗔𝗞𝗧𝗜𝗙✅")
+    else:
+        group["filter_text"] = False
+        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗧𝗘𝗫𝗧 𝗡𝗢𝗡𝗔𝗞𝗧𝗜𝗙❌")
+
+    save_group(group)
+    asyncio.create_task(delay_delete(msg, 2))
+    asyncio.create_task(delay_delete(bot_msg, 3))
+
+async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    group = get_group(msg.chat.id)
+
+    if not is_allowed(msg.from_user.id, group):
+        return
+
+    if not context.args:
+        return
+
+    if context.args[0] == "on":
+        group["filter_foto"] = True
+        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗙𝗢𝗧𝗢 𝗔𝗞𝗧𝗜𝗙✅")
+    else:
+        group["filter_foto"] = False
+        bot_msg = await msg.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗙𝗢𝗧𝗢 𝗡𝗢𝗡𝗔𝗞𝗧𝗜𝗙❌")
+
+    save_group(group)
+    asyncio.create_task(delay_delete(msg, 2))
+    asyncio.create_task(delay_delete(bot_msg, 3))
+
+# ================= DELETE ON/OFF =================
+async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    group = get_group(msg.chat.id)
+
+    if not is_allowed(msg.from_user.id, group):
+        return
+
+    if not context.args:
+        return
+
+    if context.args[0] == "on":
+        group["delete_on"] = True
+        bot_msg = await msg.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦𝗦𝗦🚀")
+    else:
+        group["delete_on"] = False
+        bot_msg = await msg.reply_text("𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
+
+    save_group(group)
+    asyncio.create_task(delay_delete(msg, 2))
+    asyncio.create_task(delay_delete(bot_msg, 3))
+
+# ================= HANDLE =================
+async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await auto_delete(update, context)
 
 # ================= MAIN =================
 app = ApplicationBuilder().token(TOKEN).build()
@@ -301,7 +430,7 @@ app.add_handler(CommandHandler("filterfoto", filterfoto))
 
 app.add_handler(CommandHandler("deletepesan", deletepesan))
 
-app.add_handler(MessageHandler(filters.ALL, auto_delete), group=1)
+app.add_handler(MessageHandler(filters.ALL, handle_all), group=1)
 
 print("BOT RUNNING...")
 app.run_polling()
