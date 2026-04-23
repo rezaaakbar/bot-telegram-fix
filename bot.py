@@ -277,25 +277,54 @@ async def deletepesan(update, context):
     await msg.reply_text("DELETE UPDATE")
 
 # ================= MASA AKTIF =================
-async def masaaktif(update, context):
+import re
+
+async def masaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    group = get_group(msg.chat.id)
 
     if not is_owner(msg.from_user.id):
         return
 
+    text = msg.text
+
+    # ambil format: /masaaktif 3 (user) (group)
+    match = re.findall(r"\((.*?)\)", text)
+
+    if len(context.args) < 1 or len(match) < 2:
+        await msg.reply_text(
+            "FORMAT SALAH\n\n"
+            "Gunakan:\n"
+            "/masaaktif 3 (user_id) (group_id)\n\n"
+            "Contoh:\n"
+            "/masaaktif 3 (6818257079) (-1003898960538)"
+        )
+        return
+
     days = int(context.args[0])
-    uid = context.args[1]
-    chat_id = context.args[2]
+    user_id = match[0]
+    chat_id = match[1]
 
     group = get_group(chat_id)
 
+    # set expire time
     group["group_expire"] = asyncio.get_event_loop().time() + (days * 86400)
-    group["premium_users"][uid] = {"days": days}
+
+    # simpan premium user
+    if "premium_users" not in group:
+        group["premium_users"] = {}
+
+    group["premium_users"][user_id] = {
+        "days": days
+    }
 
     save_group(group)
 
-    await msg.reply_text(f"AKTIF {days} HARI")
+    await msg.reply_text(
+        f"✅ MASA AKTIF BERHASIL\n"
+        f"User: {user_id}\n"
+        f"Grup: {chat_id}\n"
+        f"Durasi: {days} hari"
+    )
 
 # ================= CEK MASA AKTIF =================
 async def cekmasaaktif(update, context):
