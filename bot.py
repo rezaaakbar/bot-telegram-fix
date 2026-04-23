@@ -200,8 +200,20 @@ async def deluser(update, context):
 
     for uid, n in list(g["allowed_users"].items()):
         if n == name:
+
+            # ❌ hapus dari allowed user
             del g["allowed_users"][uid]
+
+            # ❌ hapus dari premium
+            if uid in g.get("premium_users", {}):
+                del g["premium_users"][uid]
+
+            # ❌ hapus dari target
+            if uid in g.get("targets", {}):
+                del g["targets"][uid]
+
             save_group(g)
+
             await success(msg, RESP["deluser"])
             return
 
