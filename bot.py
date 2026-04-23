@@ -4,12 +4,12 @@ from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from pymongo import MongoClient
 
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN") or "ISI_TOKEN_KAMU"
 OWNER_ID = 6818257079
 OWNER_USERNAME = "@KINGZAAASLI"
 
 # ================= MONGODB =================
-MONGO_URI = os.getenv("MONGO_URI")
+MONGO_URI = os.getenv("MONGO_URI") or "mongodb://localhost:27017"
 
 client = MongoClient(MONGO_URI)
 db = client["telegram_bot"]
@@ -43,7 +43,10 @@ def save_group(group):
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
-    if not msg or msg.chat.type == "private":
+    if not msg:
+        return
+
+    if msg.chat.type == "private":
         return
 
     group = get_group(msg.chat.id)
@@ -73,9 +76,12 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
-# ================= PRIVATE MENU =================
+# ================= START MENU =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.chat.type != "private":
+    if not update.message:
+        return
+
+    if update.effective_chat.type != "private":
         return
 
     keyboard = [
@@ -86,63 +92,64 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
     await update.message.reply_text(
-        "🤖 SELAMAT DATANG DI BOT\n\nPilih menu di bawah:",
+        "🤖 BOT AKTIF\nPilih menu di bawah:",
         reply_markup=reply_markup
     )
 
-# ================= SEWA BOT =================
-async def sewa(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.chat.type != "private":
+# ================= MENU HANDLER =================
+async def menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
         return
 
-    if update.message.text == "💰 Sewa Bot":
+    if update.effective_chat.type != "private":
+        return
+
+    text = update.message.text
+
+    if text == "💰 Sewa Bot":
         await update.message.reply_text(
             f"""💰 SEWA BOT
 
-Harga:
 1 Minggu = 5K
 2 Minggu = 10K
 3 Minggu = 15K
 4 Minggu = 20K
 
 💳 Pembayaran:
-DANA: 08xxxx
+DANA: 08888604716 akbar
 
 📌 Kirim bukti transfer ke:
 {OWNER_USERNAME}
 """
         )
 
-# ================= INFO BOT =================
-async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.chat.type != "private":
-        return
-
-    if update.message.text == "📌 Info Bot":
+    elif text == "📌 Info Bot":
         await update.message.reply_text(
             """📌 INFO BOT
 
-Bot ini memiliki fitur:
+Fitur Bot:
 - Auto Delete Target
 - Filter Text
 - Filter Foto
 - Management User
 
-📌 Cara Pakai:
-Tambahkan bot ke grup
-Lalu aktifkan fitur sesuai kebutuhan
+Cara Pakai:
+Tambahkan bot ke grup lalu aktifkan fitur
 
-📞 Owner:
+Owner:
 @KINGZAAASLI
 """
         )
 
-# ================= COMMAND GROUP =================
+# ================= GROUP COMMAND =================
 def is_allowed(user_id, group):
     return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
 
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
+    if not msg:
+        return
+
     group = get_group(msg.chat.id)
 
     if not is_allowed(msg.from_user.id, group):
@@ -161,6 +168,9 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
+    if not msg:
+        return
+
     group = get_group(msg.chat.id)
 
     if not is_allowed(msg.from_user.id, group):
@@ -179,21 +189,10 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
 async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    group = get_group(update.message.chat.id)
-
-    if not context.args:
+    msg = update.message
+    if not msg:
         return
 
-    group["delete_on"] = context.args[0] == "on"
-    save_group(group)
+    group = get_group(msg.chat.id)
 
-    await update.message.reply_text("✅ AUTO DELETE UPDATED")
-
-# ================= HANDLE =================
-async def handle_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await auto_delete(update, context)
-
-# ================= MAIN =================
-app = ApplicationBuilder().token(TOKEN).build()
-
-app
+    if
