@@ -2,15 +2,24 @@ import os
 import time
 import re
 import asyncio
+import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from pymongo import MongoClient
 
+# ================= CONFIG =================
 TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URI = os.getenv("MONGO_URI")
 
 OWNER_ID = 6818257079
 OWNER_USERNAME = "@KINGZAAASLI"
+
+# ================= WEBHOOK FIX (WAJIB) =================
+def clear_webhook():
+    try:
+        requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=true")
+    except:
+        pass
 
 # ================= DB =================
 client = MongoClient(MONGO_URI)
@@ -45,10 +54,7 @@ def clean_expired(group):
     now = time.time()
     changed = False
 
-    if "premium_users" not in group:
-        group["premium_users"] = {}
-
-    for uid in list(group["premium_users"].keys()):
+    for uid in list(group.get("premium_users", {}).keys()):
         if group["premium_users"][uid]["expire"] < now:
             del group["premium_users"][uid]
             changed = True
@@ -56,27 +62,24 @@ def clean_expired(group):
     if changed:
         save_group(group)
 
-# ================= HELPER =================
+# ================= HELPERS =================
 def is_owner(user_id):
     return user_id == OWNER_ID
 
 def is_allowed(user_id, group):
     return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
 
-def is_premium(uid, group):
-    return uid in group.get("premium_users", {})
-
 # ================= AUTO DELETE =================
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    if not msg or msg.chat.type == "private":
+    if not msg:
         return
 
     group = get_group(msg.chat.id)
     clean_expired(group)
 
     if group.get("delete_on"):
-        if str(msg.from_user.id) in group["targets"]:
+        if str(msg.from_user.id) in group.get("targets", {}):
             try:
                 await msg.delete()
             except:
@@ -95,11 +98,10 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
-# ================= COMMAND TARGET =================
+# ================= COMMANDS =================
 async def add(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     if not is_allowed(msg.from_user.id, group):
         await msg.reply_text("TIDAK DIIZINKAN")
@@ -119,7 +121,6 @@ async def add(update, context):
 async def delete(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     name = context.args[0].lower()
 
@@ -134,7 +135,6 @@ async def delete(update, context):
 async def listusn(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     text = "LIST:\n"
     for i, (uid, name) in enumerate(group["targets"].items(), 1):
@@ -146,7 +146,6 @@ async def listusn(update, context):
 async def adduser(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     name = context.args[0].lower()
     uid = str(msg.reply_to_message.from_user.id)
@@ -159,7 +158,6 @@ async def adduser(update, context):
 async def deluser(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     target = context.args[0].lower()
 
@@ -184,7 +182,6 @@ async def listuser(update, context):
 async def addtext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     group["texts"].append(" ".join(context.args).lower())
     save_group(group)
@@ -194,7 +191,6 @@ async def addtext(update, context):
 async def deltext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     text = " ".join(context.args).lower()
 
@@ -206,7 +202,6 @@ async def deltext(update, context):
 async def alltext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     text = "LIST:\n"
     for i, t in enumerate(group["texts"], 1):
@@ -310,6 +305,8 @@ async def listpremium(update, context):
     await msg.reply_text(text)
 
 # ================= MAIN =================
+clear_webhook()
+
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("add", add))
@@ -332,7 +329,7 @@ app.add_handler(CommandHandler("masaaktif", masaaktif))
 app.add_handler(CommandHandler("cekmasaaktif", cekmasaaktif))
 app.add_handler(CommandHandler("listpremium", listpremium))
 
-app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
+app.add_handler(MessageHandler(filters.ALL, auto_delete))
 
 print("BOT RUNNING...")
-app.run_polling()
+app.run_polling(drop_pending_updates=True)
