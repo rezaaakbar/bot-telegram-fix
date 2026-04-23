@@ -141,31 +141,32 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if msg.chat.type != "private":
         return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
 
-    # ================= ROLE CHECK =================
-    if not is_allowed(msg.from_user.id, g):
-        return await reject(msg)
+    uid = msg.from_user.id
+
+    # ================= CHECK ACCESS =================
+    # owner selalu boleh
+    # adduser juga boleh (allowed_users)
+    if not (uid == OWNER_ID or str(uid) in g.get("allowed_users", {})):
+        return await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬? 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 {OWNER_USERNAME}")
 
     text = (
         "📌 𝗛𝗘𝗟𝗣 𝗕𝗢𝗧 (𝗔𝗗𝗠𝗜𝗡 / 𝗨𝗦𝗘𝗥)\n\n"
 
         "🔹 /add (reply + nama)\n"
-        "➡️ Tambah target ke list auto delete\n"
-        "Contoh: reply user lalu /add zaa\n\n"
+        "➡️ Tambah target ke list auto delete\n\n"
 
         "🔹 /delete (nama)\n"
-        "➡️ Hapus target dari list\n"
-        "Contoh: /delete zaa\n\n"
+        "➡️ Hapus target dari list\n\n"
 
         "🔹 /listusn\n"
         "➡️ Lihat semua target\n\n"
 
         "🔹 /deletepesan on/off\n"
         "➡️ Aktif / matikan auto delete pesan\n"
-        "Contoh: /deletepesan on\n"
     )
 
     await msg.reply_text(text)
-
+    
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
