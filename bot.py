@@ -330,19 +330,49 @@ async def masaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ================= CEK MASA AKTIF =================
-async def cekmasaaktif(update, context):
+async def cekmasaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    group = get_group(msg.chat.id)
 
-    exp = group.get("group_expire")
+    user_id = str(msg.from_user.id)
 
-    if not exp:
-        await msg.reply_text("TIDAK ADA PREMIUM")
+    found = []
+
+    # cari di semua grup
+    for g in groups_col.find():
+        premium = g.get("premium_users", {})
+
+        if user_id in premium:
+            data = premium[user_id]
+
+            name = data.get("name", "-")
+            days = data.get("days", 0)
+            group_id = g["chat_id"]
+
+            exp = g.get("group_expire")
+
+            if exp:
+                sisa = exp - asyncio.get_event_loop().time()
+                if sisa <= 0:
+                    status = "❌ EXPIRED"
+                else:
+                    status = "✅ AKTIF"
+            else:
+                status = "❌ TIDAK ADA DATA"
+
+            found.append(
+                f"NAMA: {name}\n"
+                f"GRUP: {group_id}\n"
+                f"STATUS: {status}\n"
+                f"WAKTU: {days} hari\n"
+            )
+
+    if not found:
+        await msg.reply_text("❌ KAMU TIDAK TERDAFTAR PREMIUM")
         return
 
-    sisa = exp - asyncio.get_event_loop().time()
-    await msg.reply_text(f"SISA {int(sisa//86400)} HARI")
+    text = "📌 STATUS PREMIUM ANDA:\n\n" + "\n".join(found)
 
+    await msg.reply_text(text)
 # ================= LIST PREMIUM =================
 async def listpremium(update, context):
     msg = update.message
