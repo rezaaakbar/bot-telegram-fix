@@ -143,8 +143,15 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     uid = str(msg.from_user.id)
 
-    # OWNER + ADDUSER ONLY
-    if uid != str(OWNER_ID) and uid not in g.get("allowed_users", {}):
+    # ambil semua premium user juga
+    premium_users = g.get("premium_users", {})
+
+    is_premium = uid in premium_users
+    is_allowed_user = uid in g.get("allowed_users", {})
+    is_owner = uid == str(OWNER_ID)
+
+    # ================= AUTO CHECK =================
+    if not (is_owner or is_allowed_user or is_premium):
         return await msg.reply_text(
             f"𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬? 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 {OWNER_USERNAME}"
         )
