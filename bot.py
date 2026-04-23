@@ -77,7 +77,10 @@ def clean_expired(g):
         g["premium_users"] = {}
 
     for uid in list(g["premium_users"].keys()):
-        if g["premium_users"][uid]["expire"] <= now:
+        exp = g["premium_users"][uid]["expire"]
+
+        # ❗ SELAMANYA TIDAK DIHAPUS
+        if exp != -1 and exp <= now:
             del g["premium_users"][uid]
             g.get("allowed_users", {}).pop(uid, None)
             g.get("targets", {}).pop(uid, None)
@@ -87,7 +90,7 @@ def clean_expired(g):
 def shutdown(g):
     now = time.time()
     for _, d in g.get("premium_users", {}).items():
-        if d["expire"] > now:
+        if d["expire"] > now or d["expire"] == -1:
             return False
     return True
 
@@ -124,13 +127,12 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         pass
 
-# ================= COMMAND WRAPPER =================
+# ================= WRAPPER =================
 async def success(msg, text):
     bot_msg = await msg.reply_text(text)
     await clean_success(msg, bot_msg)
 
 # ================= COMMANDS =================
-
 async def add(update, context):
     msg = update.message
     g = get_group(msg.chat.id)
@@ -271,11 +273,11 @@ async def deletepesan(update, context):
 
     await success(msg, RESP["delete_on"] if g["delete_on"] else RESP["delete_off"])
 
-# ================= PREMIUM =================
+# ================= PREMIUM SELAMANYA =================
 async def masaaktif(update, context):
     msg = update.message
 
-    days = int(context.args[0])
+    mode = context.args[0].lower()
     name = context.args[1].lower()
 
     match = re.findall(r"\(([^)]+)\)", msg.text)
@@ -283,6 +285,17 @@ async def masaaktif(update, context):
     gid = match[1]
 
     g = get_group(gid)
+
+    if mode == "selamanya":
+        g["premium_users"][uid] = {
+            "name": name,
+            "expire": -1
+        }
+        save_group(g)
+        await msg.reply_text("MASA AKTIF BERHASIL (SELAMANYA)")
+        return
+
+    days = int(mode)
 
     g["premium_users"][uid] = {
         "name": name,
@@ -292,6 +305,7 @@ async def masaaktif(update, context):
     save_group(g)
     await msg.reply_text("MASA AKTIF BERHASIL")
 
+# ================= CEK =================
 async def cekmasaaktif(update, context):
     msg = update.message
     uid = str(msg.from_user.id)
@@ -301,6 +315,13 @@ async def cekmasaaktif(update, context):
 
         data = g.get("premium_users", {}).get(uid)
         if data:
+            if data["expire"] == -1:
+                await msg.reply_text(
+                    "SELAMAT KAMU ORANG TERPILIH BOSS KINGZAA 🔥\n"
+                    "KAMU BISA GUNAKAN SELAMANYA ATAU TANPA BATAS WAKTU🥰"
+                )
+                return
+
             sisa = int((data["expire"] - time.time()) / 86400)
 
             await msg.reply_text(
@@ -310,6 +331,7 @@ async def cekmasaaktif(update, context):
 
     await msg.reply_text("EXPIRED / TIDAK PREMIUM")
 
+# ================= LIST PREMIUM =================
 async def listpremium(update, context):
     msg = update.message
 
@@ -320,9 +342,23 @@ async def listpremium(update, context):
         clean_expired(g)
 
         for uid, data in g.get("premium_users", {}).items():
-            sisa = int((data["expire"] - time.time()) / 86400)
 
-            text += f"{i}. Nama: {data['name']}\nUserID: {uid}\nGrup: {g['chat_id']}\nSisa: {sisa} hari\n\n"
+            if data["expire"] == -1:
+                status = "SELAMANYA"
+                waktu = "TANPA BATAS WAKTU"
+            else:
+                sisa = int((data["expire"] - time.time()) / 86400)
+                status = "AKTIF" if sisa > 0 else "EXPIRED"
+                waktu = f"{sisa} hari"
+
+            text += (
+                f"{i}.\n"
+                f"Nama: {data['name']}\n"
+                f"UserID: {uid}\n"
+                f"Grup: {g['chat_id']}\n"
+                f"Status: {status}\n"
+                f"Waktu: {waktu}\n\n"
+            )
             i += 1
 
     await msg.reply_text(text)
