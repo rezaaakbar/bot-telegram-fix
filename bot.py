@@ -137,18 +137,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
     text = (
-        "✨𝐒𝐄𝐋𝐀𝐌𝐀𝐓 𝐃𝐀𝐓𝐀𝐍𝐆 𝐌𝐏𝐑𝐔𝐘 𝐃𝐈 𝐁𝐎𝐓 𝐊𝐈𝐍𝐆𝐙𝐀𝐀✨\n"
-        "•𝐊𝐀𝐋𝐀𝐔 𝐌𝐀𝐔 𝐒𝐄𝐖𝐀 𝐊𝐄𝐓𝐈𝐊 /sewabot\n"
-        "•𝐊𝐀𝐋𝐀𝐔 𝐌𝐀𝐔 𝐋𝐈𝐀𝐓 𝐈𝐍𝐅𝐎 𝐁𝐎𝐓/𝐅𝐔𝐍𝐆𝐒𝐈 𝐁𝐎𝐓 𝐊𝐄𝐓𝐈𝐊 /infobot\n"
-        "•𝐊𝐀𝐋𝐀𝐔 𝐌𝐀𝐔 𝐋𝐈𝐀𝐓 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 𝐁𝐎𝐓 𝐊𝐄𝐓𝐈𝐊 /help\n"
-        "𝐁𝐔𝐊𝐀𝐍 𝐁𝐎𝐓 𝐓𝐄𝐑𝐁𝐀𝐈𝐊 𝐓𝐀𝐏𝐈 𝐁𝐄𝐑𝐔𝐒𝐀𝐇𝐀 𝐌𝐄𝐍𝐉𝐀𝐃𝐈 𝐒𝐀𝐋𝐀𝐇 𝐒𝐀𝐓𝐔 𝐁𝐎𝐓 𝐓𝐄𝐑𝐁𝐀𝐈𝐊😁☺️"
+        "> ✨𝐒𝐄𝐋𝐀𝐌𝐀𝐓 𝐃𝐀𝐓𝐀𝐍𝐆 𝐌𝐏𝐑𝐔𝐘 𝐃𝐈 𝐁𝐎𝐓 𝐊𝐈𝐍𝐆𝐙𝐀𝐀✨\n"
+        "> •𝐊𝐀𝐋𝐀𝐔 𝐌𝐀𝐔 𝐒𝐄𝐖𝐀 𝐊𝐄𝐓𝐈𝐊 /sewabot\n"
+        "> •𝐊𝐀𝐋𝐀𝐔 𝐌𝐀𝐔 𝐋𝐈𝐀𝐓 𝐈𝐍𝐅𝐎 𝐁𝐎𝐓/𝐅𝐔𝐍𝐆𝐒𝐈 𝐁𝐎𝐓 𝐊𝐄𝐓𝐈𝐊 /infobot\n"
+        "> •𝐊𝐀𝐋𝐀𝐔 𝐌𝐀𝐔 𝐋𝐈𝐀𝐓 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 𝐁𝐎𝐓 𝐊𝐄𝐓𝐈𝐊 /help\n"
+        "> 𝐁𝐔𝐊𝐀𝐍 𝐁𝐎𝐓 𝐓𝐄𝐑𝐁𝐀𝐈𝐊 𝐓𝐀𝐏𝐈 𝐁𝐄𝐑𝐔𝐒𝐀𝐇𝐀 𝐌𝐄𝐍𝐉𝐀𝐃𝐈 𝐒𝐀𝐋𝐀𝐇 𝐒𝐀𝐓𝐔 𝐁𝐎𝐓 𝐓𝐄𝐑𝐁𝐀𝐈𝐊😁☺️"
     )
 
-    await context.bot.send_message(
-        chat_id=msg.chat.id,
-        text=text,
-        reply_to_message_id=msg.message_id
-    )
+    await msg.reply_text(text)
+
 
 async def tambahmasaaktif(update, context):
     msg = update.message
