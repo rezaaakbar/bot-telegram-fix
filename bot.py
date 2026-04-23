@@ -31,7 +31,8 @@ def get_group(chat_id):
             "texts": [],
             "filter_text": False,
             "filter_foto": False,
-            "premium_users": {}
+            "premium_users": {},
+            "active": True
         }
         groups_col.insert_one(group)
 
@@ -47,6 +48,9 @@ def is_owner(user_id):
 def is_allowed(user_id, group):
     return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
 
+def is_group_active(group):
+    return group.get("active", True)
+
 # ================= DELAY DELETE =================
 async def delay_delete(msg, delay):
     try:
@@ -58,26 +62,44 @@ async def delay_delete(msg, delay):
 # ================= AUTO DELETE =================
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-
     if not msg or msg.chat.type == "private":
         return
 
     group = get_group(msg.chat.id)
 
+    if not is_group_active(group):
+        return
+
     if group["delete_on"]:
-        if str(msg.from_user.id) in group.get("targets", {}):
+        if str(msg.from_user.id) in group["targets"]:
             try:
                 await msg.delete()
             except:
                 pass
+
+    if group["filter_text"] and msg.text:
+        if msg.text.lower().strip() in group["texts"]:
+            try:
+                await msg.delete()
+            except:
+                pass
+
+    if group["filter_foto"] and msg.photo:
+        try:
+            await msg.delete()
+        except:
+            pass
 
 # ================= TARGET =================
 async def add(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
+    if not is_group_active(group):
+        return
+
     if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text(f"𝗟𝗔𝗨 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 {OWNER_USERNAME}")
+        await msg.reply_text(f"𝗟𝗔𝗨 𝗜𝗭𝗜𝗡 {OWNER_USERNAME}")
         return
 
     if not msg.reply_to_message or not context.args:
@@ -89,14 +111,13 @@ async def add(update, context):
     group["targets"][uid] = name
     save_group(group)
 
-    await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡")
+    await msg.reply_text("BERHASIL")
 
 async def delete(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
-    if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text(f"𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 {OWNER_USERNAME}")
+    if not is_group_active(group):
         return
 
     name = context.args[0].lower()
@@ -105,7 +126,7 @@ async def delete(update, context):
         if uname == name:
             del group["targets"][uid]
             save_group(group)
-            await msg.reply_text("𝗗𝗜𝗛𝗔𝗣𝗨𝗦")
+            await msg.reply_text("DIHAPUS")
             return
 
 # ================= LISTUSN =================
@@ -113,20 +134,10 @@ async def listusn(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
-    if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text("𝗟𝗔𝗨")
+    if not is_group_active(group):
         return
 
-    if msg.chat.type == "private":
-        if not is_owner(msg.from_user.id):
-            return
-
-        if not context.args:
-            return
-
-        group = get_group(context.args[0])
-
-    text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
+    text = "LIST:\n"
     for i, (uid, name) in enumerate(group["targets"].items(), 1):
         text += f"{i}. {name} ({uid})\n"
 
@@ -137,7 +148,7 @@ async def adduser(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
-    if not is_owner(msg.from_user.id):
+    if not is_group_active(group):
         return
 
     name = context.args[0].lower()
@@ -152,7 +163,7 @@ async def deluser(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
-    if not is_owner(msg.from_user.id):
+    if not is_group_active(group):
         return
 
     target = context.args[0].lower()
@@ -167,11 +178,7 @@ async def deluser(update, context):
 async def listuser(update, context):
     msg = update.message
 
-    if not is_owner(msg.from_user.id):
-        return
-
     text = ""
-
     for g in groups_col.find():
         if g.get("allowed_users"):
             text += f"({g['chat_id']})\n"
@@ -185,8 +192,10 @@ async def addtext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
-    text = " ".join(context.args).lower()
-    group["texts"].append(text)
+    if not is_group_active(group):
+        return
+
+    group["texts"].append(" ".join(context.args).lower())
     save_group(group)
 
     await msg.reply_text("TEXT ADD")
@@ -194,6 +203,9 @@ async def addtext(update, context):
 async def deltext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
+
+    if not is_group_active(group):
+        return
 
     text = " ".join(context.args).lower()
 
@@ -206,14 +218,8 @@ async def alltext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
-    if msg.chat.type == "private":
-        if not is_owner(msg.from_user.id):
-            return
-
-        if not context.args:
-            return
-
-        group = get_group(context.args[0])
+    if not is_group_active(group):
+        return
 
     text = "LIST:\n"
     for i, t in enumerate(group["texts"], 1):
@@ -249,12 +255,9 @@ async def deletepesan(update, context):
 
     await msg.reply_text("DELETE")
 
-# ================= PREMIUM SYSTEM FIX =================
+# ================= PREMIUM =================
 async def masaaktif(update, context):
     msg = update.message
-
-    if not is_owner(msg.from_user.id):
-        return
 
     days = int(context.args[0])
     name = context.args[1].lower()
@@ -274,9 +277,8 @@ async def masaaktif(update, context):
 
     save_group(group)
 
-    await msg.reply_text(f"AKTIF {days} HARI")
+    await msg.reply_text("MASA AKTIF BERHASIL")
 
-# ================= CEK MASA AKTIF =================
 async def cekmasaaktif(update, context):
     msg = update.message
     uid = str(msg.from_user.id)
@@ -284,17 +286,13 @@ async def cekmasaaktif(update, context):
     for g in groups_col.find():
         if uid in g.get("premium_users", {}):
             data = g["premium_users"][uid]
-
-            expire = data["expire"]
-            name = data["name"]
-
             now = time.time()
 
-            status = "AKTIF" if now < expire else "EXPIRED"
-            sisa = int((expire - now) / 86400) if now < expire else 0
+            status = "AKTIF" if now < data["expire"] else "EXPIRED"
+            sisa = int((data["expire"] - now) / 86400)
 
             await msg.reply_text(
-                f"NAMA: {name}\n"
+                f"NAMA: {data['name']}\n"
                 f"GRUP: {g['chat_id']}\n"
                 f"STATUS: {status}\n"
                 f"SISA: {sisa} HARI"
@@ -303,23 +301,18 @@ async def cekmasaaktif(update, context):
 
     await msg.reply_text("TIDAK PREMIUM")
 
-# ================= LIST PREMIUM =================
 async def listpremium(update, context):
     msg = update.message
 
-    if not is_owner(msg.from_user.id):
-        return
-
-    text = "📌 LIST PREMIUM:\n\n"
+    text = "LIST PREMIUM:\n\n"
     i = 0
+    now = time.time()
 
     for g in groups_col.find():
         for uid, data in g.get("premium_users", {}).items():
             i += 1
-
-            now = time.time()
             status = "AKTIF" if now < data["expire"] else "EXPIRED"
-            sisa = int((data["expire"] - now) / 86400) if now < data["expire"] else 0
+            sisa = int((data["expire"] - now) / 86400)
 
             text += (
                 f"{i}.\n"
@@ -332,7 +325,27 @@ async def listpremium(update, context):
 
     await msg.reply_text(text)
 
-# ================= HANDLER =================
+# ================= AUTO EXPIRE GRUP =================
+async def auto_expire_worker():
+    while True:
+        now = time.time()
+
+        for g in list(groups_col.find()):
+            active = False
+
+            for uid, data in g.get("premium_users", {}).items():
+                if data["expire"] > now:
+                    active = True
+
+            if not active:
+                g["active"] = False
+                g["premium_users"] = {}
+                g["allowed_users"] = {}
+                groups_col.update_one({"chat_id": g["chat_id"]}, {"$set": g})
+
+        await asyncio.sleep(30)
+
+# ================= MAIN =================
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("add", add))
@@ -356,6 +369,11 @@ app.add_handler(CommandHandler("cekmasaaktif", cekmasaaktif))
 app.add_handler(CommandHandler("listpremium", listpremium))
 
 app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
+
+async def start_bg():
+    asyncio.create_task(auto_expire_worker())
+
+app.post_init = start_bg
 
 print("BOT RUNNING...")
 app.run_polling()
