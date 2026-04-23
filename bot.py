@@ -144,7 +144,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "𝐁𝐔𝐊𝐀𝐍 𝐁𝐎𝐓 𝐓𝐄𝐑𝐁𝐀𝐈𝐊 𝐓𝐀𝐏𝐈 𝐁𝐄𝐑𝐔𝐒𝐀𝐇𝐀 𝐌𝐄𝐍𝐉𝐀𝐃𝐈 𝐒𝐀𝐋𝐀𝐇 𝐒𝐀𝐓𝐔 𝐁𝐎𝐓 𝐓𝐄𝐑𝐁𝐀𝐈𝐊😁☺️"
     )
 
-    await msg.reply_text(text)
+    await context.bot.send_message(
+        chat_id=msg.chat.id,
+        text=text,
+        reply_to_message_id=msg.message_id
+    )
 
 async def tambahmasaaktif(update, context):
     msg = update.message
