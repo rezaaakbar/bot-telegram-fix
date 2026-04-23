@@ -303,11 +303,11 @@ async def listpremium(update, context):
             status = "AKTIF" if sisa > 0 else "EXPIRED"
 
             text += (
-                f"{i}.Nama: {data['name']}"
-                f"UserID: {uid}"
-                f"Grup: {g['chat_id']}\n"
-                f"Status: {status}\n"
-                f"Sisa: {sisa} hari\n\n"
+    f"{i}.Nama: {data['name']}\n"
+    f"UserID: {uid}\n"
+    f"Grup: {g['chat_id']}\n"
+    f"Status: {status}\n"
+    f"Sisa: {sisa} hari\n\n"
             )
 
     await msg.reply_text(text)
