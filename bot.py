@@ -244,23 +244,45 @@ async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ================= MASAAKTIF (FIX STABLE) =================
 async def masaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_owner(update.message.from_user.id):
+    msg = update.message
+
+    # wajib owner
+    if not is_owner(msg.from_user.id):
+        await msg.reply_text("lu bukan owner")
         return
 
-    if not update.message.reply_to_message:
+    # cek args
+    if len(context.args) < 2:
+        await msg.reply_text("Format: /masaaktif nama tanggal\ncontoh: /masaaktif leon 26 april")
         return
 
-    user = update.message.reply_to_message.from_user
-    uid = str(user.id)
-    date = " ".join(context.args).lower()
+    name = context.args[0].lower().strip()
+    date = " ".join(context.args[1:]).lower().strip()
 
-    group = get_group(update.message.chat.id)
+    group = get_group(msg.chat.id)
 
-    group["masaaktif"][uid] = date
+    found = None
+
+    # cari user dari nama
+    for uid, uname in group.get("allowed_users", {}).items():
+        if uname.lower().strip() == name:
+            found = uid
+            break
+
+    if not found:
+        await msg.reply_text("user tidak ditemukan di listuser")
+        return
+
+    # simpan masa aktif
+    group["masaaktif"][found] = date
     save_group(group)
 
-    await update.message.reply_text(f"{user.first_name} aktif sampai {date}")
-
+    # ✅ SUCCESS RESPONSE (INI YANG KAMU MINTA)
+    await msg.reply_text(
+        f"𝗠𝗔𝗦𝗔 𝗔𝗞𝗧𝗜𝗙 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗦𝗘𝗧\n\n"
+        f"👤 User : {name}\n"
+        f"📅 Aktif sampai : {date}"
+    )
 
 # ================= CEK MASA AKTIF =================
 async def cekmasaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
