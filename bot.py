@@ -135,7 +135,6 @@ async def success(msg, text):
 # ================= COMMANDS =================
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    g = get_group(msg.chat.id)
 
     # PRIVATE ONLY
     if msg.chat.type != "private":
@@ -143,40 +142,41 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     uid = str(msg.from_user.id)
 
-    # ambil semua premium user juga
-    premium_users = g.get("premium_users", {})
+    # cek owner
+    if uid == str(OWNER_ID):
+        pass
+    else:
+        # cek semua group sekali (simple tapi aman)
+        allowed = False
 
-    is_premium = uid in premium_users
-    is_allowed_user = uid in g.get("allowed_users", {})
-    is_owner = uid == str(OWNER_ID)
+        for g in groups_col.find():
+            if uid in g.get("allowed_users", {}):
+                allowed = True
+                break
 
-    # ================= AUTO CHECK =================
-    if not (is_owner or is_allowed_user or is_premium):
-        return await msg.reply_text(
-            f"𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬? 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 {OWNER_USERNAME}"
-        )
+        if not allowed:
+            return await msg.reply_text(
+                f"𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬? 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 {OWNER_USERNAME}"
+            )
 
     text = (
         "📌 𝗖𝗢𝗠𝗠𝗔𝗡𝗗 𝗛𝗘𝗟𝗣 𝗕𝗢𝗧\n\n"
 
         "🔹 /add (reply + nama)\n"
-        "➡️ Tambah target user ke list auto delete\n"
-        "Contoh: reply user lalu /add zaa\n\n"
+        "➡️ Tambah target user ke list auto delete\n\n"
 
         "🔹 /delete (nama)\n"
-        "➡️ Hapus target dari list\n"
-        "Contoh: /delete zaa\n\n"
+        "➡️ Hapus target dari list\n\n"
 
         "🔹 /listusn\n"
-        "➡️ Lihat semua target yang ada di grup\n\n"
+        "➡️ Lihat semua target\n\n"
 
         "🔹 /deletepesan on/off\n"
-        "➡️ Aktifkan / matikan auto delete pesan target\n"
-        "Contoh: /deletepesan on"
+        "➡️ Aktif / matikan auto delete"
     )
 
     await msg.reply_text(text)
-    
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
