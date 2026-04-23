@@ -14,7 +14,7 @@ client = MongoClient(MONGO_URI)
 db = client["telegram_bot"]
 groups_col = db["groups"]
 
-# ================= GROUP =================
+# ================= DATABASE =================
 def get_group(chat_id):
     chat_id = str(chat_id)
     group = groups_col.find_one({"chat_id": chat_id})
@@ -43,8 +43,57 @@ def is_owner(user_id):
     return user_id == OWNER_ID
 
 
-def is_allowed(user_id, group):
-    return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
+# ================= EXPIRED SYSTEM =================
+def is_expired(date_str):
+    try:
+        now = datetime.now()
+        parts = date_str.lower().split()
+
+        day = int(parts[0])
+        month = parts[1]
+
+        months = {
+            "jan":1,"january":1,
+            "feb":2,"february":2,
+            "mar":3,"march":3,
+            "apr":4,"april":4,
+            "may":5,"mei":5,
+            "jun":6,"june":6,
+            "jul":7,"july":7,
+            "aug":8,"august":8,
+            "sep":9,"september":9,
+            "oct":10,"october":10,
+            "nov":11,"november":11,
+            "dec":12,"december":12
+        }
+
+        if month not in months:
+            return False
+
+        expire = datetime(now.year, months[month], day)
+        return now > expire
+    except:
+        return False
+
+
+def check_access(user_id, group):
+    uid = str(user_id)
+
+    if uid not in group.get("allowed_users", {}):
+        return False
+
+    name = group["allowed_users"][uid]
+    masa = group.get("masaaktif", {}).get(name)
+
+    if masa and is_expired(masa):
+        del group["allowed_users"][uid]
+        if name in group.get("masaaktif", {}):
+            del group["masaaktif"][name]
+        save_group(group)
+        return False
+
+    return True
+
 
 # ================= DELETE HELPER =================
 async def delay_delete(msg, delay):
@@ -53,6 +102,7 @@ async def delay_delete(msg, delay):
         await msg.delete()
     except:
         pass
+
 
 # ================= AUTO DELETE =================
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -69,13 +119,14 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if group["filter_foto"] and msg.photo:
         await msg.delete()
 
-# ================= ADD TARGET =================
+
+# ================= ADD =================
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
 
-    if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text(f"𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 {OWNER_USERNAME}")
+    if not check_access(msg.from_user.id, group):
+        await msg.reply_text(f"𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬? 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 {OWNER_USERNAME}")
         return
 
     target = msg.reply_to_message.from_user
@@ -86,7 +137,8 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text("𝗧𝗔𝗥𝗚𝗘𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧✅")
 
-# ================= DELETE TARGET =================
+
+# ================= DELETE =================
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -100,12 +152,49 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text("𝗧𝗔𝗥𝗚𝗘𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗟𝗜𝗦𝗧✅")
             return
 
-# ================= LISTUSN (OWNER ONLY PRIVATE) =================
+
+# ================= ADDUSER =================
+async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    group = get_group(msg.chat.id)
+
+    if not is_owner(msg.from_user.id):
+        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬? 𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗟𝗔𝗪𝗔𝗞😹")
+        return
+
+    target = msg.reply_to_message.from_user
+    name = context.args[0].lower()
+
+    group["allowed_users"][str(target.id)] = name
+    save_group(group)
+
+    await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧✅")
+
+
+# ================= DELUSER =================
+async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+
+    if not is_owner(msg.from_user.id):
+        await msg.reply_text("𝗟𝗔𝗨 𝗦𝗜𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬? 𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗟𝗔𝗪𝗔𝗞😹")
+        return
+
+    name = context.args[0].lower()
+
+    for g in groups_col.find():
+        for uid, uname in list(g.get("allowed_users", {}).items()):
+            if uname == name:
+                del g["allowed_users"][uid]
+                save_group(g)
+
+    await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗟𝗜𝗦𝗧 ✅")
+
+
+# ================= LISTUSN =================
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
     if not is_owner(msg.from_user.id):
-        await msg.reply_text("𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔😹")
         return
 
     group = get_group(context.args[0])
@@ -116,12 +205,12 @@ async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
-# ================= ALLTEXT (OWNER ONLY PRIVATE) =================
+
+# ================= ALLTEXT =================
 async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
     if not is_owner(msg.from_user.id):
-        await msg.reply_text("𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔😹")
         return
 
     group = get_group(context.args[0])
@@ -132,12 +221,12 @@ async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
-# ================= LISTUSER (OWNER ONLY PRIVATE) =================
+
+# ================= LISTUSER =================
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
     if not is_owner(msg.from_user.id):
-        await msg.reply_text("𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔😹")
         return
 
     text = "𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n\n"
@@ -145,11 +234,18 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for g in groups_col.find():
         if g.get("allowed_users"):
             text += f"({g['chat_id']})\n"
-            for name in g["allowed_users"].values():
-                text += f"{name}\n"
+
+            for uid, name in g["allowed_users"].items():
+                masa = g.get("masaaktif", {}).get(name)
+                if masa:
+                    text += f"{name} {masa}\n"
+                else:
+                    text += f"{name}\n"
+
             text += "\n"
 
     await msg.reply_text(text)
+
 
 # ================= FILTER TEXT =================
 async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -162,6 +258,7 @@ async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧 ✅")
 
+
 async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -172,57 +269,57 @@ async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗟𝗜𝗦𝗧✅")
 
-# ================= FILTER TOGGLE =================
-async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    group = get_group(msg.chat.id)
 
+# ================= FILTER =================
+async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    group = get_group(update.message.chat.id)
     group["filter_text"] = context.args[0] == "on"
     save_group(group)
 
-    await msg.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦🚀" if group["filter_text"] else "𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
+    await update.message.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦🚀" if group["filter_text"] else "𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
+
 
 async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    group = get_group(msg.chat.id)
-
+    group = get_group(update.message.chat.id)
     group["filter_foto"] = context.args[0] == "on"
     save_group(group)
 
-    await msg.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦🚀" if group["filter_foto"] else "𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
+    await update.message.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦🚀" if group["filter_foto"] else "𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
 
-# ================= MASAAKTIF =================
+
+# ================= MASA AKTIF =================
 async def masaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(update.message.from_user.id):
         return
 
     group = get_group(context.args[0])
     name = context.args[1]
-    date = context.args[2]
+    date = " ".join(context.args[2:])
 
     group["masaaktif"][name] = date
     save_group(group)
 
     await update.message.reply_text(f"{name} aktif sampai {date}")
 
-# ================= CEK MASAAKTIF =================
-async def cekmasaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    group = get_group(msg.chat.id)
 
-    uid = str(msg.from_user.id)
+# ================= CEK =================
+async def cekmasaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    group = get_group(update.message.chat.id)
 
     for name, date in group.get("masaaktif", {}).items():
-        await msg.reply_text(f"{name} aktif sampai {date}")
+        await update.message.reply_text(f"{name} aktif sampai {date}")
         return
 
-    await msg.reply_text("selamat kamu org terdekat dan terpilih dari bos kingzaa")
+    await update.message.reply_text("selamat kamu org terdekat dan terpilih dari bos kingzaa")
+
 
 # ================= MAIN =================
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("delete", delete))
+app.add_handler(CommandHandler("adduser", adduser))
+app.add_handler(CommandHandler("deluser", deluser))
 
 app.add_handler(CommandHandler("listusn", listusn))
 app.add_handler(CommandHandler("alltext", alltext))
