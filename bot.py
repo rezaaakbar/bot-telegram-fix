@@ -34,24 +34,40 @@ def get_group(chat_id):
         }
         groups_col.insert_one(group)
 
+    if "premium_users" not in group:
+        group["premium_users"] = {}
+
     return group
 
 def save_group(group):
     groups_col.update_one({"chat_id": group["chat_id"]}, {"$set": group})
 
-# ================= PREMIUM =================
+# ================= PREMIUM HELPERS =================
 def is_premium_active(uid, group):
     data = group.get("premium_users", {}).get(uid)
     if not data:
         return False
     return data["expire"] > time.time()
 
-def has_active_premium(group):
+def should_shutdown_group(group):
     now = time.time()
+
     for uid, data in group.get("premium_users", {}).items():
         if data["expire"] > now:
-            return True
-    return False
+            return False
+
+    return True
+
+def clean_expired(group):
+    now = time.time()
+
+    for uid in list(group.get("premium_users", {})):
+        if group["premium_users"][uid]["expire"] <= now:
+            del group["premium_users"][uid]
+            group.get("allowed_users", {}).pop(uid, None)
+            group.get("targets", {}).pop(uid, None)
+
+    save_group(group)
 
 # ================= ACCESS =================
 def is_allowed(user_id, group):
@@ -65,18 +81,6 @@ def is_allowed(user_id, group):
             return False
 
     return uid in group.get("allowed_users", {})
-
-# ================= CLEAN EXPIRED =================
-def clean_expired(group):
-    now = time.time()
-
-    for uid in list(group.get("premium_users", {})):
-        if group["premium_users"][uid]["expire"] <= now:
-            del group["premium_users"][uid]
-            group.get("allowed_users", {}).pop(uid, None)
-            group.get("targets", {}).pop(uid, None)
-
-    save_group(group)
 
 # ================= REJECT =================
 async def reject(msg):
@@ -93,8 +97,8 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(msg.chat.id)
     clean_expired(group)
 
-    # 🔥 GROUP OFF IF NO PREMIUM ACTIVE
-    if not has_active_premium(group):
+    # 🔥 SHUTDOWN MODE
+    if should_shutdown_group(group):
         return
 
     if group.get("delete_on"):
@@ -157,7 +161,6 @@ async def delete(update, context):
 async def listusn(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     text = "LIST:\n"
     for i, (uid, name) in enumerate(group["targets"].items(), 1):
@@ -293,43 +296,28 @@ async def deletepesan(update, context):
 async def masaaktif(update, context):
     msg = update.message
 
-    try:
-        days = int(context.args[0])
-        name = context.args[1].lower()
+    days = int(context.args[0])
+    name = context.args[1].lower()
 
-        match = re.findall(r"\(([^)]+)\)", msg.text)
+    match = re.findall(r"\(([^)]+)\)", msg.text)
 
-        if len(match) < 2:
-            await msg.reply_text("FORMAT SALAH!")
-            return
+    uid = match[0]
+    gid = match[1]
 
-        uid = match[0].strip()
-        gid = match[1].strip()
+    group = get_group(gid)
 
-        group = get_group(gid)
+    if "premium_users" not in group:
+        group["premium_users"] = {}
 
-        # 🔥 FIX PENTING: pastikan key selalu ada
-        if "premium_users" not in group:
-            group["premium_users"] = {}
+    group["premium_users"][uid] = {
+        "name": name,
+        "expire": time.time() + (days * 86400)
+    }
 
-        group["premium_users"][uid] = {
-            "name": name,
-            "expire": time.time() + (days * 86400)
-        }
+    save_group(group)
 
-        save_group(group)
+    await msg.reply_text("MASA AKTIF BERHASIL")
 
-        await msg.reply_text(
-            f"✅ MASA AKTIF BERHASIL\n\n"
-            f"Nama: {name}\n"
-            f"UserID: {uid}\n"
-            f"Grup: {gid}\n"
-            f"Durasi: {days} hari"
-        )
-
-    except Exception as e:
-        await msg.reply_text(f"ERROR MASA AKTIF:\n{e}")
-        
 async def cekmasaaktif(update, context):
     msg = update.message
     uid = str(msg.from_user.id)
@@ -374,7 +362,7 @@ async def listpremium(update, context):
                 f"Sisa: {sisa} hari\n\n"
             )
 
-    await msg.reply_text(text if i else "TIDAK ADA PREMIUM USER")
+    await msg.reply_text(text if i else "TIDAK ADA PREMIUM")
 
 # ================= BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
