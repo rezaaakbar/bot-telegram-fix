@@ -46,14 +46,6 @@ def is_owner(user_id):
 def is_allowed(user_id, group):
     return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
 
-# ================= DELAY DELETE =================
-async def delay_delete(msg, delay):
-    try:
-        await asyncio.sleep(delay)
-        await msg.delete()
-    except:
-        pass
-
 # ================= AUTO DELETE =================
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -92,8 +84,11 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
-# ================= MENU =================
+# ================= MENU PRIVATE =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.chat.type != "private":
+        return
+
     keyboard = [[KeyboardButton("📊 Menu")]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -103,6 +98,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.chat.type != "private":
+        return
+
     text = update.message.text
 
     if text == "📊 Menu":
@@ -110,12 +108,19 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [KeyboardButton("💰 Sewa Bot")],
             [KeyboardButton("📌 Info Bot")]
         ]
+
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-        await update.message.reply_text("📋 MENU BOT:", reply_markup=reply_markup)
+        await update.message.reply_text(
+            "📋 MENU BOT:",
+            reply_markup=reply_markup
+        )
 
 # ================= SEWA BOT =================
 async def sewa_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.chat.type != "private":
+        return
+
     if update.message.text == "💰 Sewa Bot":
         keyboard = [
             [KeyboardButton("1 Minggu - 5K")],
@@ -124,11 +129,18 @@ async def sewa_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [KeyboardButton("4 Minggu - 20K")],
             [KeyboardButton("⬅️ Kembali")]
         ]
+
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-        await update.message.reply_text("💰 Pilih Paket Sewa:", reply_markup=reply_markup)
+        await update.message.reply_text(
+            "💰 Pilih Paket Sewa:",
+            reply_markup=reply_markup
+        )
 
 async def pilih_sewa(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.chat.type != "private":
+        return
+
     text = update.message.text
 
     if "Minggu" in text:
@@ -142,18 +154,21 @@ Durasi: {minggu} Minggu
 Harga: Rp {harga}
 
 💳 Pembayaran:
-DANA/OVO: 08xxxx
+DANA: 08xxxx
 
-Kirim bukti ke:
+📌 Kirim SS (bukti transfer) ke owner:
 {OWNER_USERNAME}
 """
         )
 
 async def kembali(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.chat.type != "private":
+        return
+
     if update.message.text == "⬅️ Kembali":
         await start(update, context)
 
-# ================= COMMAND TARGET =================
+# ================= COMMAND GROUP =================
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -191,18 +206,6 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text("✅ TARGET DIHAPUS")
             return
 
-# ================= FILTER =================
-async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    group = get_group(update.message.chat.id)
-
-    if not context.args:
-        return
-
-    group["filter_text"] = context.args[0] == "on"
-    save_group(group)
-
-    await update.message.reply_text("✅ FILTER TEXT UPDATED")
-
 async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
 
@@ -224,7 +227,6 @@ app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("delete", delete))
-app.add_handler(CommandHandler("filtertext", filtertext))
 app.add_handler(CommandHandler("deletepesan", deletepesan))
 
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, menu))
