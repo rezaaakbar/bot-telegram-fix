@@ -133,6 +133,39 @@ async def success(msg, text):
     await clean_success(msg, bot_msg)
 
 # ================= COMMANDS =================
+async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    g = get_group(msg.chat.id)
+
+    # ================= PRIVATE ONLY =================
+    if msg.chat.type != "private":
+        return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
+
+    # ================= ROLE CHECK =================
+    if not is_allowed(msg.from_user.id, g):
+        return await reject(msg)
+
+    text = (
+        "📌 𝗛𝗘𝗟𝗣 𝗕𝗢𝗧 (𝗔𝗗𝗠𝗜𝗡 / 𝗨𝗦𝗘𝗥)\n\n"
+
+        "🔹 /add (reply + nama)\n"
+        "➡️ Tambah target ke list auto delete\n"
+        "Contoh: reply user lalu /add zaa\n\n"
+
+        "🔹 /delete (nama)\n"
+        "➡️ Hapus target dari list\n"
+        "Contoh: /delete zaa\n\n"
+
+        "🔹 /listusn\n"
+        "➡️ Lihat semua target\n\n"
+
+        "🔹 /deletepesan on/off\n"
+        "➡️ Aktif / matikan auto delete pesan\n"
+        "Contoh: /deletepesan on\n"
+    )
+
+    await msg.reply_text(text)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
@@ -531,6 +564,7 @@ app.add_handler(CommandHandler("masaaktif", masaaktif))
 app.add_handler(CommandHandler("cekmasaaktif", cekmasaaktif))
 app.add_handler(CommandHandler("listpremium", listpremium))
 
+app.add_handler(CommandHandler("help", help_cmd))
 app.add_handler(CommandHandler("start", start))
 
 app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
