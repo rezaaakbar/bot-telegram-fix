@@ -234,6 +234,7 @@ async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text)
 
+# ================= DELUSER =================
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
@@ -241,13 +242,18 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.reply_text("𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗠𝗣𝗥𝗨𝗬 𝗜𝗡𝗜 𝗞𝗛𝗨𝗦𝗨𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔🖕🏻")
         return
 
-    if len(context.args) < 2:
-        return
-
-    chat_id = context.args[0]
-    target = context.args[1].lower()
-
-    group = get_group(chat_id)
+    # PRIVATE
+    if msg.chat.type == "private":
+        if len(context.args) < 2:
+            return
+        chat_id = context.args[0]
+        target = context.args[1].lower()
+        group = get_group(chat_id)
+    else:
+        if not context.args:
+            return
+        target = context.args[0].lower()
+        group = get_group(msg.chat.id)
 
     for uid, name in list(group["allowed_users"].items()):
         if name == target:
