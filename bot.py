@@ -1,7 +1,6 @@
 import os
 import time
 import re
-import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from pymongo import MongoClient
@@ -40,31 +39,50 @@ def get_group(chat_id):
 def save_group(group):
     groups_col.update_one({"chat_id": group["chat_id"]}, {"$set": group})
 
+# ================= PREMIUM =================
+def is_premium_active(uid, group):
+    data = group.get("premium_users", {}).get(uid)
+    if not data:
+        return False
+    return data["expire"] > time.time()
+
+def has_active_premium(group):
+    now = time.time()
+    for uid, data in group.get("premium_users", {}).items():
+        if data["expire"] > now:
+            return True
+    return False
+
+# ================= ACCESS =================
+def is_allowed(user_id, group):
+    uid = str(user_id)
+
+    if user_id == OWNER_ID:
+        return True
+
+    if uid in group.get("premium_users", {}):
+        if not is_premium_active(uid, group):
+            return False
+
+    return uid in group.get("allowed_users", {})
+
 # ================= CLEAN EXPIRED =================
 def clean_expired(group):
     now = time.time()
-    changed = False
 
-    if "premium_users" not in group:
-        group["premium_users"] = {}
-
-    for uid in list(group["premium_users"].keys()):
-        if group["premium_users"][uid]["expire"] < now:
+    for uid in list(group.get("premium_users", {})):
+        if group["premium_users"][uid]["expire"] <= now:
             del group["premium_users"][uid]
-            changed = True
+            group.get("allowed_users", {}).pop(uid, None)
+            group.get("targets", {}).pop(uid, None)
 
-    if changed:
-        save_group(group)
+    save_group(group)
 
-# ================= HELPER =================
-def is_owner(user_id):
-    return user_id == OWNER_ID
-
-def is_allowed(user_id, group):
-    return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
-
-def is_premium(uid, group):
-    return uid in group.get("premium_users", {})
+# ================= REJECT =================
+async def reject(msg):
+    await msg.reply_text(
+        f"𝗟𝗔𝗨 𝗦𝗔𝗣𝗘 𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗦𝗔𝗠𝗔 𝗞𝗜𝗡𝗚𝗭𝗔𝗔 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}"
+    )
 
 # ================= AUTO DELETE =================
 async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -74,6 +92,10 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group = get_group(msg.chat.id)
     clean_expired(group)
+
+    # 🔥 GROUP OFF IF NO PREMIUM ACTIVE
+    if not has_active_premium(group):
+        return
 
     if group.get("delete_on"):
         if str(msg.from_user.id) in group["targets"]:
@@ -102,10 +124,7 @@ async def add(update, context):
     clean_expired(group)
 
     if not is_allowed(msg.from_user.id, group):
-        await msg.reply_text("TIDAK DIIZINKAN")
-        return
-
-    if not msg.reply_to_message or not context.args:
+        await reject(msg)
         return
 
     uid = str(msg.reply_to_message.from_user.id)
@@ -121,6 +140,10 @@ async def delete(update, context):
     group = get_group(msg.chat.id)
     clean_expired(group)
 
+    if not is_allowed(msg.from_user.id, group):
+        await reject(msg)
+        return
+
     name = context.args[0].lower()
 
     for uid, uname in list(group["targets"].items()):
@@ -130,7 +153,7 @@ async def delete(update, context):
             await msg.reply_text("DIHAPUS")
             return
 
-# ================= LISTUSN (TIDAK DIUBAH) =================
+# ================= LISTUSN =================
 async def listusn(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -148,6 +171,10 @@ async def adduser(update, context):
     group = get_group(msg.chat.id)
     clean_expired(group)
 
+    if not is_allowed(msg.from_user.id, group):
+        await reject(msg)
+        return
+
     name = context.args[0].lower()
     uid = str(msg.reply_to_message.from_user.id)
 
@@ -160,6 +187,10 @@ async def deluser(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
     clean_expired(group)
+
+    if not is_allowed(msg.from_user.id, group):
+        await reject(msg)
+        return
 
     target = context.args[0].lower()
 
@@ -186,6 +217,10 @@ async def addtext(update, context):
     group = get_group(msg.chat.id)
     clean_expired(group)
 
+    if not is_allowed(msg.from_user.id, group):
+        await reject(msg)
+        return
+
     group["texts"].append(" ".join(context.args).lower())
     save_group(group)
 
@@ -195,6 +230,10 @@ async def deltext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
     clean_expired(group)
+
+    if not is_allowed(msg.from_user.id, group):
+        await reject(msg)
+        return
 
     text = " ".join(context.args).lower()
 
@@ -206,7 +245,6 @@ async def deltext(update, context):
 async def alltext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
-    clean_expired(group)
 
     text = "LIST:\n"
     for i, t in enumerate(group["texts"], 1):
@@ -219,27 +257,36 @@ async def filtertext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
+    if not is_allowed(msg.from_user.id, group):
+        await reject(msg)
+        return
+
     group["filter_text"] = context.args[0] == "on"
     save_group(group)
-
     await msg.reply_text("OK")
 
 async def filterfoto(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
+    if not is_allowed(msg.from_user.id, group):
+        await reject(msg)
+        return
+
     group["filter_foto"] = context.args[0] == "on"
     save_group(group)
-
     await msg.reply_text("OK")
 
 async def deletepesan(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
 
+    if not is_allowed(msg.from_user.id, group):
+        await reject(msg)
+        return
+
     group["delete_on"] = context.args[0] == "on"
     save_group(group)
-
     await msg.reply_text("OK")
 
 # ================= PREMIUM =================
@@ -271,12 +318,12 @@ async def cekmasaaktif(update, context):
     for g in groups_col.find():
         clean_expired(g)
 
-        if uid in g.get("premium_users", {}):
-            data = g["premium_users"][uid]
-
+        data = g.get("premium_users", {}).get(uid)
+        if data:
             sisa = int((data["expire"] - time.time()) / 86400)
 
             await msg.reply_text(
+                f"📌 STATUS PREMIUM ANDA:\n\n"
                 f"NAMA: {data['name']}\n"
                 f"GRUP: {g['chat_id']}\n"
                 f"STATUS: AKTIF\n"
@@ -284,12 +331,12 @@ async def cekmasaaktif(update, context):
             )
             return
 
-    await msg.reply_text("EXPIRED / TIDAK PREMIUM")
+    await msg.reply_text("❌ TIDAK PREMIUM / EXPIRED")
 
 async def listpremium(update, context):
     msg = update.message
 
-    text = "LIST PREMIUM:\n"
+    text = "📌 LIST PREMIUM USER:\n\n"
     i = 0
 
     for g in groups_col.find():
@@ -297,22 +344,20 @@ async def listpremium(update, context):
 
         for uid, data in g.get("premium_users", {}).items():
             i += 1
-
             sisa = int((data["expire"] - time.time()) / 86400)
 
-            status = "AKTIF" if sisa > 0 else "EXPIRED"
-
             text += (
-    f"{i}.Nama: {data['name']}\n"
-    f"UserID: {uid}\n"
-    f"Grup: {g['chat_id']}\n"
-    f"Status: {status}\n"
-    f"Sisa: {sisa} hari\n\n"
+                f"{i}.\n"
+                f"Nama: {data['name']}\n"
+                f"UserID: {uid}\n"
+                f"Grup: {g['chat_id']}\n"
+                f"Status: AKTIF\n"
+                f"Sisa: {sisa} hari\n\n"
             )
 
-    await msg.reply_text(text)
+    await msg.reply_text(text if i else "TIDAK ADA PREMIUM USER")
 
-# ================= MAIN =================
+# ================= BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("add", add))
