@@ -56,14 +56,14 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
     g = get_group(msg.chat.id)
 
     if g.get("delete_on"):
-        if str(msg.from_user.id) in g["targets"]:
+        if str(msg.from_user.id) in g.get("targets", {}):
             try:
                 await msg.delete()
             except:
                 pass
 
     if g.get("filter_text") and msg.text:
-        if msg.text.lower().strip() in g["texts"]:
+        if msg.text.lower().strip() in g.get("texts", []):
             try:
                 await msg.delete()
             except:
@@ -104,7 +104,7 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     name = context.args[0].lower()
 
-    for uid, n in list(g["targets"].items()):
+    for uid, n in list(g.get("targets", {}).items()):
         if n == name:
             del g["targets"][uid]
             save_group(g)
@@ -117,6 +117,12 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     g = get_group(msg.chat.id)
 
     if not is_owner(msg.from_user.id):
+        return
+
+    if not msg.reply_to_message:
+        return
+
+    if not context.args:
         return
 
     user = msg.reply_to_message.from_user
@@ -159,13 +165,14 @@ async def masaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     g = get_group(msg.chat.id)
 
-    if uid not in g["allowed_users"]:
+    if uid not in g.get("allowed_users", {}):
         await msg.reply_text("user tidak ditemukan di listuser")
         return
 
-    g["allowed_users"][uid]["masaaktif"] = date
-    save_group(g)
+    if isinstance(g["allowed_users"][uid], dict):
+        g["allowed_users"][uid]["masaaktif"] = date
 
+    save_group(g)
     await msg.reply_text(f"{uid} aktif sampai {date}")
 
 # ================= CEK MASA AKTIF =================
@@ -178,54 +185,62 @@ async def cekmasaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
     g = get_group(msg.chat.id)
     uid = str(msg.from_user.id)
 
-    data = g["allowed_users"].get(uid)
+    data = g.get("allowed_users", {}).get(uid)
 
-    if not data or not data.get("masaaktif"):
+    if not isinstance(data, dict) or not data.get("masaaktif"):
         await msg.reply_text("𝗦𝗘𝗟𝗔𝗠𝗔𝗧 𝗞𝗔𝗠𝗨 𝗢𝗥𝗔𝗡𝗚 𝗧𝗘𝗥𝗣𝗜𝗟𝗜𝗛 𝗗𝗔𝗥𝗜 𝗕𝗢𝗦 𝗞𝗜𝗡𝗚𝗭𝗔𝗔")
         return
 
     await msg.reply_text(data["masaaktif"])
 
-# ================= LISTUSER =================
+# ================= LISTUSER (FIXED 100%) =================
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n\n"
 
     for g in groups_col.find():
-        if not g.get("allowed_users"):
+        allowed = g.get("allowed_users", {})
+
+        if not allowed:
             continue
 
         text += f"({g['chat_id']})\n"
 
-        for uid, d in g["allowed_users"].items():
-            if isinstance(d, dict):
-                name = d["name"]
-                masa = d.get("masaaktif")
+        for uid, data in allowed.items():
 
-                if masa:
-                    text += f"{name} (`{uid}`) {masa}\n"
-                else:
-                    text += f"{name} (`{uid}`)\n"
+            if not isinstance(data, dict):
+                continue
+
+            name = data.get("name")
+            if not name:
+                continue
+
+            masa = data.get("masaaktif")
+
+            if masa:
+                text += f"{name} (`{uid}`) {masa}\n"
+            else:
+                text += f"{name} (`{uid}`)\n"
 
         text += "\n"
 
-    await update.message.reply_text(text)
+    await update.message.reply_text(text, parse_mode="Markdown")
 
 # ================= LISTUSN =================
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     g = get_group(update.message.chat.id)
 
     text = "𝐋𝐈𝐒𝐓 𝐓𝐀𝐑𝐆𝐄𝐓:\n"
-    for uid, name in g["targets"].items():
+    for uid, name in g.get("targets", {}).items():
         text += f"{name} (`{uid}`)\n"
 
-    await update.message.reply_text(text)
+    await update.message.reply_text(text, parse_mode="Markdown")
 
 # ================= ALLTEXT =================
 async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     g = get_group(update.message.chat.id)
 
     text = "𝐋𝐈𝐒𝐓 𝐓𝐄𝐗𝐓:\n"
-    for i, t in enumerate(g["texts"], 1):
+    for i, t in enumerate(g.get("texts", []), 1):
         text += f"{i}. {t}\n"
 
     await update.message.reply_text(text)
@@ -252,7 +267,7 @@ async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     t = " ".join(context.args).lower()
 
-    if t in g["texts"]:
+    if t in g.get("texts", []):
         g["texts"].remove(t)
         save_group(g)
 
@@ -300,7 +315,7 @@ async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_group(g)
         await update.message.reply_text("𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
 
-# ================= BOT =================
+# ================= BOT RUN =================
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("add", add))
@@ -320,5 +335,5 @@ app.add_handler(CommandHandler("cekmasaaktif", cekmasaaktif))
 
 app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
 
-print("BOT RUNNING")
+print("BOT RUNNING...")
 app.run_polling()
