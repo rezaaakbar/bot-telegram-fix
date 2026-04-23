@@ -29,7 +29,8 @@ def get_group(chat_id):
             "texts": [],
             "filter_text": False,
             "filter_foto": False,
-            "group_expire": None
+            "group_expire": None,
+            "premium_users": {}
         }
         groups_col.insert_one(group)
 
@@ -68,8 +69,8 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     group = get_group(msg.chat.id)
 
-    if group["delete_on"]:
-        if str(msg.from_user.id) in group["targets"]:
+    if group.get("delete_on"):
+        if str(msg.from_user.id) in group.get("targets", {}):
             try:
                 await msg.delete()
             except:
@@ -96,7 +97,7 @@ async def add(update, context):
     group["targets"][uid] = name
     save_group(group)
 
-    await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡")
+    await msg.reply_text("𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘 𝗗𝗔𝗙𝗧𝗔𝗥 𝗟𝗜𝗦𝗧")
 
 # ================= DELETE TARGET =================
 async def delete(update, context):
@@ -112,14 +113,14 @@ async def delete(update, context):
 
     name = context.args[0].lower()
 
-    for uid, uname in list(group["targets"].items()):
+    for uid, uname in list(group.get("targets", {}).items()):
         if uname == name:
             del group["targets"][uid]
             save_group(group)
             await msg.reply_text("𝗗𝗜𝗛𝗔𝗣𝗨𝗦")
             return
 
-# ================= LISTUSN (FULL ORIGINAL LOGIC) =================
+# ================= LISTUSN =================
 async def listusn(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -142,7 +143,7 @@ async def listusn(update, context):
 
         group = get_group(context.args[0])
 
-    if not group["targets"]:
+    if not group.get("targets"):
         await msg.reply_text("𝙆𝙊𝙎𝙊𝙉𝙂 /𝘼𝘿𝘿 𝘿𝙐𝙇𝙐")
         return
 
@@ -158,7 +159,6 @@ async def adduser(update, context):
     group = get_group(msg.chat.id)
 
     if not is_owner(msg.from_user.id):
-        await msg.reply_text("KHUSUS OWNER")
         return
 
     name = context.args[0].lower()
@@ -179,14 +179,14 @@ async def deluser(update, context):
 
     target = context.args[0].lower()
 
-    for uid, name in list(group["allowed_users"].items()):
+    for uid, name in list(group.get("allowed_users", {}).items()):
         if name == target:
             del group["allowed_users"][uid]
             save_group(group)
             await msg.reply_text("USER DIHAPUS")
             return
 
-# ================= LISTUSER (FULL ORIGINAL) =================
+# ================= LISTUSER =================
 async def listuser(update, context):
     msg = update.message
 
@@ -227,7 +227,7 @@ async def deltext(update, context):
         save_group(group)
         await msg.reply_text("TEXT DIHAPUS")
 
-# ================= ALLTEXT (FULL ORIGINAL) =================
+# ================= ALLTEXT =================
 async def alltext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -243,12 +243,12 @@ async def alltext(update, context):
         group = get_group(context.args[0])
 
     text = "𝐃𝐀𝐅𝐓𝐀𝐑 𝐋𝐈𝐒𝐓:\n"
-    for i, t in enumerate(group["texts"], 1):
+    for i, t in enumerate(group.get("texts", []), 1):
         text += f"{i}. {t}\n"
 
     await msg.reply_text(text)
 
-# ================= FILTER TEXT =================
+# ================= FILTER =================
 async def filtertext(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -258,7 +258,6 @@ async def filtertext(update, context):
 
     await msg.reply_text("FILTER TEXT UPDATE")
 
-# ================= FILTER FOTO =================
 async def filterfoto(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -268,7 +267,6 @@ async def filterfoto(update, context):
 
     await msg.reply_text("FILTER FOTO UPDATE")
 
-# ================= DELETE PESAN =================
 async def deletepesan(update, context):
     msg = update.message
     group = get_group(msg.chat.id)
@@ -287,7 +285,14 @@ async def masaaktif(update, context):
         return
 
     days = int(context.args[0])
+    uid = context.args[1]
+    chat_id = context.args[2]
+
+    group = get_group(chat_id)
+
     group["group_expire"] = asyncio.get_event_loop().time() + (days * 86400)
+    group["premium_users"][uid] = {"days": days}
+
     save_group(group)
 
     await msg.reply_text(f"AKTIF {days} HARI")
@@ -306,10 +311,33 @@ async def cekmasaaktif(update, context):
     sisa = exp - asyncio.get_event_loop().time()
     await msg.reply_text(f"SISA {int(sisa//86400)} HARI")
 
-# ================= HANDLER =================
-async def handle_all(update, context):
-    await auto_delete(update, context)
+# ================= LIST PREMIUM =================
+async def listpremium(update, context):
+    msg = update.message
 
+    if not is_owner(msg.from_user.id):
+        return
+
+    text = "📌 LIST PREMIUM USER:\n\n"
+    count = 0
+
+    for g in groups_col.find():
+        for uid, data in g.get("premium_users", {}).items():
+            count += 1
+            text += (
+                f"{count}.\n"
+                f"Nama: -\n"
+                f"UserID: {uid}\n"
+                f"Grup: {g['chat_id']}\n"
+                f"Durasi: {data.get('days')} hari\n\n"
+            )
+
+    if count == 0:
+        text = "TIDAK ADA PREMIUM"
+
+    await msg.reply_text(text)
+
+# ================= HANDLER =================
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("add", add))
@@ -330,8 +358,9 @@ app.add_handler(CommandHandler("deletepesan", deletepesan))
 
 app.add_handler(CommandHandler("masaaktif", masaaktif))
 app.add_handler(CommandHandler("cekmasaaktif", cekmasaaktif))
+app.add_handler(CommandHandler("listpremium", listpremium))
 
-app.add_handler(MessageHandler(~filters.COMMAND, handle_all))
+app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
 
 print("BOT RUNNING...")
 app.run_polling()
