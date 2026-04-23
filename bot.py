@@ -287,9 +287,10 @@ async def cekmasaaktif(update, context):
     await msg.reply_text("EXPIRED / TIDAK PREMIUM")
 
 async def listpremium(update, context):
+async def listpremium(update, context):
     msg = update.message
 
-    text = "LIST PREMIUM:\n\n"
+    text = "LIST PREMIUM:\n"
     i = 0
 
     for g in groups_col.find():
@@ -297,13 +298,16 @@ async def listpremium(update, context):
 
         for uid, data in g.get("premium_users", {}).items():
             i += 1
+
             sisa = int((data["expire"] - time.time()) / 86400)
 
+            status = "AKTIF" if sisa > 0 else "EXPIRED"
+
             text += (
-                f"{i}.\n"
-                f"Nama: {data['name']}\n"
-                f"UserID: {uid}\n"
+                f"{i}.Nama: {data['name']}"
+                f"UserID: {uid}"
                 f"Grup: {g['chat_id']}\n"
+                f"Status: {status}\n"
                 f"Sisa: {sisa} hari\n\n"
             )
 
