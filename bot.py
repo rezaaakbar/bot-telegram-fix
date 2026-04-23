@@ -42,9 +42,9 @@ def is_owner(user_id):
 def is_allowed(user_id, group):
     return user_id == OWNER_ID or str(user_id) in group.get("allowed_users", {})
 
-# ================= DELAY DELETE =================
-async def delay_delete(msg, delay):
-    await asyncio.sleep(delay)
+# ================= DELETE =================
+async def delay_delete(msg, t):
+    await asyncio.sleep(t)
     try:
         await msg.delete()
     except:
@@ -90,11 +90,10 @@ async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await update.message.reply_text(
-        "📦 BOT KINGZAA\n\n"
-        "⏳ PERMINGGU 5K\n\n"
-        "💸 PAYMENT KINGZAA\n"
-        "DANA: 08888604716 AKBAR\n\n"
-        "TF SESUAI MINGGU YANG MAU DI SEWA‼️\n\n"
+        "📦BOT KINGZAA\n\n"
+        "⏳PERMINGGU 5K\n\n"
+        "💸PAYMENT KINGZAA\n"
+        "DANA:08888604716 AKBAR\n\n"
         f"KIRIM BUKTI KE {OWNER_USERNAME}"
     )
 
@@ -106,16 +105,13 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(msg.from_user.id, group):
         return await msg.reply_text(f"𝗠𝗜𝗡𝗧𝗔 𝗜𝗭𝗜𝗡 𝗗𝗨𝗟𝗨 {OWNER_USERNAME}")
 
-    if not msg.reply_to_message or not context.args:
-        return
-
     uid = str(msg.reply_to_message.from_user.id)
     name = context.args[0].lower()
 
     group["targets"][uid] = name
     save_group(group)
 
-    bot = await msg.reply_text("𝗧𝗔𝗥𝗚𝗘𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧✅")
+    bot = await msg.reply_text("𝗧𝗔𝗥𝗚𝗘𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧✅")
     asyncio.create_task(delay_delete(msg, 2))
     asyncio.create_task(delay_delete(bot, 3))
 
@@ -141,13 +137,20 @@ async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ================= LISTUSN =================
 async def listusn(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    group = get_group(update.message.chat.id)
+    msg = update.message
 
-    text = "𝐋𝐈𝐒𝐓 𝐓𝐀𝐑𝐆𝐄𝐓::\n\n"
+    if msg.chat.type == "private":
+        if not context.args:
+            return await msg.reply_text("MASUKIN ID GRUP\ncontoh: /listusn -100xxxx")
+        group = get_group(context.args[0])
+    else:
+        group = get_group(msg.chat.id)
+
+    text = "LIST TARGET:\n\n"
     for uid, name in group["targets"].items():
         text += f"{name} ({uid})\n"
 
-    await update.message.reply_text(text)
+    await msg.reply_text(text)
 
 # ================= ADDUSER =================
 async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -163,7 +166,7 @@ async def adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group["allowed_users"][uid] = name
     save_group(group)
 
-    await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧✅")
+    await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧✅")
 
 # ================= DELUSER =================
 async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -179,92 +182,81 @@ async def deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if uname == name:
             del group["allowed_users"][uid]
             save_group(group)
-            await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗟𝗜𝗦𝗧✅")
+            await msg.reply_text("𝗨𝗦𝗘𝗥 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗟𝗜𝗦𝗧 ✅")
             return
 
-# ================= LISTUSER =================
+# ================= LISTUSER (GLOBAL) =================
 async def listuser(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    group = get_group(update.message.chat.id)
+    if not is_owner(update.message.from_user.id):
+        return await update.message.reply_text(f"KHUSUS OWNER {OWNER_USERNAME}")
 
-    text = f"𝐋𝐈𝐒𝐓 𝐔𝐒𝐄𝐑:\n({group['chat_id']})\n"
-    for uid, name in group["allowed_users"].items():
-        text += f"{name}\n"
+    text = "LIST USER:\n\n"
 
-    await update.message.reply_text(text)
-
-# ================= ALLTEXT =================
-async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    group = get_group(update.message.chat.id)
-
-    text = "𝐋𝐈𝐒𝐓 𝐓𝐄𝐗𝐓:\n\n"
-    for i, t in enumerate(group["texts"], 1):
-        text += f"{i}. {t}\n"
+    for g in groups_col.find():
+        if g.get("allowed_users"):
+            text += f"({g['chat_id']})\n"
+            for uid, name in g["allowed_users"].items():
+                text += f"- {name} ({uid})\n"
+            text += "\n"
 
     await update.message.reply_text(text)
 
 # ================= ADDTEXT =================
 async def addtext(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    group = get_group(msg.chat.id)
+    group = get_group(update.message.chat.id)
 
     text = " ".join(context.args).lower()
-
     group["texts"].append(text)
     save_group(group)
 
-    await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧 ✅")
+    await update.message.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜𝗧𝗔𝗠𝗕𝗔𝗛𝗞𝗔𝗡 𝗞𝗘𝗟𝗜𝗦𝗧 ✅")
 
 # ================= DELTEXT =================
 async def deltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    group = get_group(msg.chat.id)
+    group = get_group(update.message.chat.id)
 
     text = " ".join(context.args).lower()
 
     if text in group["texts"]:
         group["texts"].remove(text)
         save_group(group)
-        await msg.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗟𝗜𝗦𝗧✅")
+        await update.message.reply_text("𝗧𝗘𝗫𝗧 𝗕𝗘𝗥𝗛𝗔𝗦𝗜𝗟 𝗗𝗜 𝗛𝗔𝗣𝗨𝗦 𝗗𝗔𝗥𝗜 𝗟𝗜𝗦𝗧✅")
 
-# ================= FILTER TEXT =================
+# ================= ALLTEXT =================
+async def alltext(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+
+    if msg.chat.type == "private":
+        if not context.args:
+            return await msg.reply_text("MASUKIN ID GRUP")
+        group = get_group(context.args[0])
+    else:
+        group = get_group(msg.chat.id)
+
+    text = "ALLTEXT:\n\n"
+    for i, t in enumerate(group["texts"], 1):
+        text += f"{i}. {t}\n"
+
+    await msg.reply_text(text)
+
+# ================= FILTER =================
 async def filtertext(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
-
-    if context.args[0] == "on":
-        group["filter_text"] = True
-        await update.message.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗧𝗘𝗫𝗧 𝗔𝗞𝗧𝗜𝗙")
-
-    else:
-        group["filter_text"] = False
-        await update.message.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗧𝗘𝗫𝗧 𝗢𝗙𝗙")
-
+    group["filter_text"] = context.args[0] == "on"
     save_group(group)
+    await update.message.reply_text("DONE")
 
-# ================= FILTER FOTO =================
 async def filterfoto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
-
-    if context.args[0] == "on":
-        group["filter_foto"] = True
-        await update.message.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗙𝗢𝗧𝗢 𝗔𝗞𝗧𝗜𝗙")
-    else:
-        group["filter_foto"] = False
-        await update.message.reply_text("𝗙𝗜𝗟𝗧𝗘𝗥 𝗙𝗢𝗧𝗢 𝗢𝗙𝗙")
-
+    group["filter_foto"] = context.args[0] == "on"
     save_group(group)
+    await update.message.reply_text("DONE")
 
-# ================= DELETEPESAN =================
 async def deletepesan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group = get_group(update.message.chat.id)
-
-    if context.args[0] == "on":
-        group["delete_on"] = True
-        await update.message.reply_text("𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦🚀")
-    else:
-        group["delete_on"] = False
-        await update.message.reply_text("𝗗𝗔𝗛 𝗕𝗘𝗥𝗛𝗘𝗡𝗧𝗜 𝗕𝗢𝗦𝗦🥰")
-
+    group["delete_on"] = context.args[0] == "on"
     save_group(group)
+    await update.message.reply_text("DONE")
 
 # ================= MAIN =================
 app = ApplicationBuilder().token(TOKEN).build()
