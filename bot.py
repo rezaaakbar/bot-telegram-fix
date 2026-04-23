@@ -370,7 +370,9 @@ async def cekmasaaktif(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text("📌 STATUS PREMIUM:\n\n" + "\n".join(found))
 # ================= LIST PREMIUM =================
-async def listpremium(update, context):
+import time
+
+async def listpremium(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
     if not is_owner(msg.from_user.id):
@@ -380,18 +382,34 @@ async def listpremium(update, context):
     count = 0
 
     for g in groups_col.find():
-        for uid, data in g.get("premium_users", {}).items():
+        premium = g.get("premium_users", {})
+
+        for uid, data in premium.items():
             count += 1
+
+            name = data.get("name", "-")
+            expire = data.get("expire", 0)
+
+            # hitung status
+            now = time.time()
+            if now > expire:
+                status = "❌ EXPIRED"
+                sisa = 0
+            else:
+                status = "✅ AKTIF"
+                sisa = int((expire - now) / 86400)
+
             text += (
                 f"{count}.\n"
-                f"Nama: -\n"
+                f"Nama: {name}\n"
                 f"UserID: {uid}\n"
                 f"Grup: {g['chat_id']}\n"
-                f"Durasi: {data.get('days')} hari\n\n"
+                f"Status: {status}\n"
+                f"Sisa: {sisa} hari\n\n"
             )
 
     if count == 0:
-        text = "TIDAK ADA PREMIUM"
+        text = "📌 BELUM ADA USER PREMIUM"
 
     await msg.reply_text(text)
 
