@@ -3,8 +3,8 @@ import time
 import re
 import asyncio
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters, CallbackQueryHandler
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from pymongo import MongoClient
 
 logging.basicConfig(level=logging.INFO)
@@ -195,130 +195,6 @@ async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text,
         reply_markup=reply_markup
     )
-
-async def sewa_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    if query.data != "confirm_sewa":
-        return
-
-    user = query.from_user
-    group_id = str(query.message.chat.id)
-
-    pending_sewa[str(user.id)] = {
-        "name": user.first_name.lower(),
-        "user_id": str(user.id),
-        "group_id": group_id
-    }
-
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                "✅ TERIMA",
-                callback_data=f"approve_{user.id}"
-            ),
-            InlineKeyboardButton(
-                "❌ TOLAK",
-                callback_data=f"reject_{user.id}"
-            )
-        ]
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    owner_text = (
-        "📥 SEWA BARU MASUK\n\n"
-        f"NIK: {user.first_name}\n"
-        f"USERID: {user.id}\n"
-        f"IDGRUP: {group_id}\n"
-        "WAKTU: REQUEST"
-    )
-
-    await context.bot.send_message(
-        chat_id=OWNER_ID,
-        text=owner_text,
-        reply_markup=reply_markup
-    )
-
-    await query.edit_message_text(
-        "REQUEST SEWA BERHASIL DIKIRIM KE OWNER ✅"
-    )
-
-async def owner_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-
-    # ================= TERIMA =================
-    if data.startswith("approve_"):
-        uid = data.split("_")[1]
-
-        if uid not in pending_sewa:
-            return await query.edit_message_text("DATA TIDAK DITEMUKAN")
-
-        pending_sewa["waiting_days"] = uid
-
-        return await query.edit_message_text(
-            "KIRIM JUMLAH HARI AKTIF\n\n"
-            "contoh:\n7"
-        )
-
-    # ================= TOLAK =================
-    if data.startswith("reject_"):
-        uid = data.split("_")[1]
-
-        if uid in pending_sewa:
-            del pending_sewa[uid]
-
-        return await query.edit_message_text(
-            "SEWA DITOLAK ❌"
-        )
-
-async def owner_input_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-
-    # PRIVATE ONLY
-    if msg.chat.type != "private":
-        return
-
-    # OWNER ONLY
-    if msg.from_user.id != OWNER_ID:
-        return
-
-    # belum ada request approve
-    if "waiting_days" not in pending_sewa:
-        return
-
-    # hanya angka
-    if not msg.text.isdigit():
-        return
-
-    days = int(msg.text)
-    uid = pending_sewa["waiting_days"]
-
-    if uid not in pending_sewa:
-        return await msg.reply_text("DATA SEWA TIDAK DITEMUKAN")
-
-    data = pending_sewa[uid]
-    g = get_group(data["group_id"])
-
-    # masuk premium
-    g["premium_users"][uid] = {
-        "name": data["name"],
-        "expire": time.time() + (days * 86400)
-    }
-
-    # masuk allowed user
-    g["allowed_users"][uid] = data["name"]
-
-    save_group(g)
-
-    del pending_sewa[uid]
-    del pending_sewa["waiting_days"]
-
-    await msg.reply_text
 
 async def infobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
