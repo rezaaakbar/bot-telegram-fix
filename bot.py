@@ -92,7 +92,7 @@ def shutdown(g, user_id=None):
         if user_id == OWNER_ID:
             return False
 
-    now = time.time()
+        now = time.time()
 
     premium_users = g.get("premium_users", {})
 
