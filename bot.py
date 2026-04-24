@@ -195,7 +195,56 @@ async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text,
         reply_markup=reply_markup
     )
-    
+
+async def sewa_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data != "confirm_sewa":
+        return
+
+    user = query.from_user
+    group_id = str(query.message.chat.id)
+
+    pending_sewa[str(user.id)] = {
+        "name": user.first_name.lower(),
+        "user_id": str(user.id),
+        "group_id": group_id
+    }
+
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "✅ TERIMA",
+                callback_data=f"approve_{user.id}"
+            ),
+            InlineKeyboardButton(
+                "❌ TOLAK",
+                callback_data=f"reject_{user.id}"
+            )
+        ]
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    owner_text = (
+        "📥 SEWA BARU MASUK\n\n"
+        f"NIK: {user.first_name}\n"
+        f"USERID: {user.id}\n"
+        f"IDGRUP: {group_id}\n"
+        "WAKTU: REQUEST"
+    )
+
+    await context.bot.send_message(
+        chat_id=OWNER_ID,
+        text=owner_text,
+        reply_markup=reply_markup
+    )
+
+    await query.edit_message_text(
+        "REQUEST SEWA BERHASIL DIKIRIM KE OWNER ✅"
+    )
+
 async def infobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
