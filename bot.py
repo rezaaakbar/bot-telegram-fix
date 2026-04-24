@@ -760,70 +760,37 @@ async def listpremium(update, context):
     await msg.reply_text(text)
 
 # ================= MAIN =================
-
 app = ApplicationBuilder().token(TOKEN).build()
 
-# ================= COMMAND OWNER / PREMIUM =================
-
-app.add_handler(CommandHandler("tambahmasaaktif", tambahmasaaktif))
-app.add_handler(CommandHandler("kurangmasaaktif", kurangmasaaktif))
-app.add_handler(CommandHandler("masaaktif", masaaktif))
-app.add_handler(CommandHandler("cekmasaaktif", cekmasaaktif))
-app.add_handler(CommandHandler("listpremium", listpremium))
-
-# ================= TARGET =================
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("help", help_cmd))
+app.add_handler(CommandHandler("infobot", infobot))
+app.add_handler(CommandHandler("sewabot", sewabot))
 
 app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("delete", delete))
 app.add_handler(CommandHandler("listusn", listusn))
 
-# ================= USER =================
-
 app.add_handler(CommandHandler("adduser", adduser))
 app.add_handler(CommandHandler("deluser", deluser))
 app.add_handler(CommandHandler("listuser", listuser))
-
-# ================= TEXT FILTER =================
 
 app.add_handler(CommandHandler("addtext", addtext))
 app.add_handler(CommandHandler("deltext", deltext))
 app.add_handler(CommandHandler("alltext", alltext))
 
-# ================= FILTER =================
-
 app.add_handler(CommandHandler("filtertext", filtertext))
 app.add_handler(CommandHandler("filterfoto", filterfoto))
 app.add_handler(CommandHandler("deletepesan", deletepesan))
 
-# ================= PUBLIC =================
+app.add_handler(CommandHandler("masaaktif", masaaktif))
+app.add_handler(CommandHandler("cekmasaaktif", cekmasaaktif))
+app.add_handler(CommandHandler("listpremium", listpremium))
 
-app.add_handler(CommandHandler("help", help_cmd))
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("infobot", infobot))
-app.add_handler(CommandHandler("sewabot", sewabot))
+app.add_handler(CommandHandler("tambahmasaaktif", tambahmasaaktif))
+app.add_handler(CommandHandler("kurangmasaaktif", kurangmasaaktif))
 
-# ================= BUTTON CALLBACK =================
-
-app.add_handler(CallbackQueryHandler(sewa_callback))
-app.add_handler(CallbackQueryHandler(owner_callback))
-
-# ================= OWNER INPUT JUMLAH HARI =================
-
-app.add_handler(
-    MessageHandler(
-        filters.TEXT & ~filters.COMMAND,
-        owner_input_days
-    )
-)
-
-# ================= AUTO DELETE (PALING BAWAH) =================
-
-app.add_handler(
-    MessageHandler(
-        ~filters.COMMAND,
-        auto_delete
-    )
-)
+app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
 
 print("BOT RUNNING...")
 app.run_polling(drop_pending_updates=True)
