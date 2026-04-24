@@ -276,6 +276,50 @@ async def owner_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "SEWA DITOLAK ❌"
         )
 
+async def owner_input_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+
+    # PRIVATE ONLY
+    if msg.chat.type != "private":
+        return
+
+    # OWNER ONLY
+    if msg.from_user.id != OWNER_ID:
+        return
+
+    # belum ada request approve
+    if "waiting_days" not in pending_sewa:
+        return
+
+    # hanya angka
+    if not msg.text.isdigit():
+        return
+
+    days = int(msg.text)
+    uid = pending_sewa["waiting_days"]
+
+    if uid not in pending_sewa:
+        return await msg.reply_text("DATA SEWA TIDAK DITEMUKAN")
+
+    data = pending_sewa[uid]
+    g = get_group(data["group_id"])
+
+    # masuk premium
+    g["premium_users"][uid] = {
+        "name": data["name"],
+        "expire": time.time() + (days * 86400)
+    }
+
+    # masuk allowed user
+    g["allowed_users"][uid] = data["name"]
+
+    save_group(g)
+
+    del pending_sewa[uid]
+    del pending_sewa["waiting_days"]
+
+    await msg.reply_text(
+
 async def infobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
