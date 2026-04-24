@@ -245,6 +245,37 @@ async def sewa_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "REQUEST SEWA BERHASIL DIKIRIM KE OWNER ✅"
     )
 
+async def owner_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+
+    # ================= TERIMA =================
+    if data.startswith("approve_"):
+        uid = data.split("_")[1]
+
+        if uid not in pending_sewa:
+            return await query.edit_message_text("DATA TIDAK DITEMUKAN")
+
+        pending_sewa["waiting_days"] = uid
+
+        return await query.edit_message_text(
+            "KIRIM JUMLAH HARI AKTIF\n\n"
+            "contoh:\n7"
+        )
+
+    # ================= TOLAK =================
+    if data.startswith("reject_"):
+        uid = data.split("_")[1]
+
+        if uid in pending_sewa:
+            del pending_sewa[uid]
+
+        return await query.edit_message_text(
+            "SEWA DITOLAK ❌"
+        )
+
 async def infobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
