@@ -89,7 +89,7 @@ def clean_expired(g):
 
 def shutdown(g, user_id=None):
     # OWNER selalu bisa bypass
-    if user_id == OWNER_ID:
+        if user_id == OWNER_ID:
         return False
 
     now = time.time()
@@ -125,7 +125,7 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         clean_expired(g)
 
         if shutdown(g, msg.from_user.id):
-    return
+            return
     
         if g.get("delete_on") and str(msg.from_user.id) in g["targets"]:
             await msg.delete()
