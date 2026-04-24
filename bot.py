@@ -684,9 +684,9 @@ async def listpremium(update, context):
 
     await msg.reply_text(text)
 
-app = ApplicationBuilder().token(TOKEN).build()
 
-# ================= COMMAND =================
+# ================= MAIN =================
+app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("tambahmasaaktif", tambahmasaaktif))
 app.add_handler(CommandHandler("kurangmasaaktif", kurangmasaaktif))
