@@ -484,3 +484,237 @@ async def alltext(update, context):
         text += f"{i}. {t}\n"
 
     await msg.reply_text(text)
+#================= FILTER =================
+
+async def filtertext(update, context):
+    msg = update.message
+    g = get_group(msg.chat.id)
+
+    g["filter_text"] = context.args[0] == "on"
+    save_group(g)
+
+    await success(msg, RESP["delete_on"] if g["filter_text"] else RESP["delete_off"])
+
+
+async def filterfoto(update, context):
+    msg = update.message
+    g = get_group(msg.chat.id)
+
+    g["filter_foto"] = context.args[0] == "on"
+    save_group(g)
+
+    await success(msg, RESP["delete_on"] if g["filter_foto"] else RESP["delete_off"])
+
+
+async def deletepesan(update, context):
+    msg = update.message
+    g = get_group(msg.chat.id)
+
+    g["delete_on"] = context.args[0] == "on"
+    save_group(g)
+
+    await success(msg, RESP["delete_on"] if g["delete_on"] else RESP["delete_off"])
+
+
+#================= PREMIUM =================
+
+async def masaaktif(update, context):
+    msg = update.message
+
+    mode = context.args[0].lower()
+    name = context.args[1].lower()
+
+    match = re.findall(r"\d+", msg.text)
+    if len(match) < 2:
+        return
+
+    uid = match[0]
+    gid = match[1]
+
+    g = get_group(gid)
+
+    if mode == "selamanya":
+        g["premium_users"][uid] = {
+            "name": name,
+            "expire": -1
+        }
+        save_group(g)
+        return await msg.reply_text("MASA AKTIF BERHASIL (SELAMANYA)")
+
+    days = int(mode)
+
+    g["premium_users"][uid] = {
+        "name": name,
+        "expire": time.time() + (days * 86400)
+    }
+
+    save_group(g)
+    await msg.reply_text("MASA AKTIF BERHASIL")
+
+
+async def cekmasaaktif(update, context):
+    msg = update.message
+    uid = str(msg.from_user.id)
+
+    for g in groups_col.find():
+        clean_expired(g)
+
+        data = g.get("premium_users", {}).get(uid)
+
+        if data:
+            if data["expire"] == -1:
+                return await msg.reply_text(
+                    "SELAMAT KAMU ORANG TERPILIH BOSS KINGZAA 🔥\n"
+                    "KAMU BISA GUNAKAN SELAMANYA ATAU TANPA BATAS WAKTU🥰"
+                )
+
+            sisa = int((data["expire"] - time.time()) / 86400)
+
+            return await msg.reply_text(
+                f"NAMA: {data['name']}\n"
+                f"GRUP: {g['chat_id']}\n"
+                f"STATUS: AKTIF\n"
+                f"SISA: {sisa} HARI"
+            )
+
+    await msg.reply_text("EXPIRED / TIDAK PREMIUM")
+
+
+async def listpremium(update, context):
+    msg = update.message
+
+    text = "𝐋𝐈𝐒𝐓 𝐏𝐑𝐄𝐌𝐈𝐔𝐌:\n\n"
+    i = 1
+
+    for g in groups_col.find():
+        clean_expired(g)
+
+        for uid, data in g.get("premium_users", {}).items():
+
+            if data["expire"] == -1:
+                status = "SELAMANYA"
+                waktu = "TANPA BATAS WAKTU"
+            else:
+                sisa = int((data["expire"] - time.time()) / 86400)
+                status = "AKTIF" if sisa > 0 else "EXPIRED"
+                waktu = f"{sisa} hari"
+
+            text += (
+                f"{i}.\n"
+                f"Nama: {data['name']}\n"
+                f"UserID: {uid}\n"
+                f"Grup: {g['chat_id']}\n"
+                f"Status: {status}\n"
+                f"Waktu: {waktu}\n\n"
+            )
+            i += 1
+
+    await msg.reply_text(text)
+
+
+async def tambahmasaaktif(update, context):
+    msg = update.message
+
+    if msg.chat.type != "private":
+        return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
+
+    name = context.args[0].lower()
+    add_days = int(context.args[1])
+
+    now = time.time()
+
+    for g in groups_col.find():
+        for uid, data in g.get("premium_users", {}).items():
+            if data["name"] == name:
+
+                if data["expire"] == -1:
+                    return await msg.reply_text("USER SELAMANYA TIDAK BISA DIUBAH")
+
+                remaining = data["expire"] - now
+                new_expire = now + remaining + (add_days * 86400)
+
+                g["premium_users"][uid]["expire"] = new_expire
+
+                groups_col.update_one(
+                    {"chat_id": g["chat_id"]},
+                    {"$set": g}
+                )
+
+                return await msg.reply_text("BERHASIL TAMBAH MASA AKTIF")
+
+
+async def kurangmasaaktif(update, context):
+    msg = update.message
+
+    if msg.chat.type != "private":
+        return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
+
+    name = context.args[0].lower()
+    reduce_days = int(context.args[1])
+
+    now = time.time()
+
+    for g in groups_col.find():
+        for uid, data in g.get("premium_users", {}).items():
+            if data["name"] == name:
+
+                if data["expire"] == -1:
+                    return await msg.reply_text("USER SELAMANYA TIDAK BISA DIKURANGI")
+
+                new_expire = data["expire"] - (reduce_days * 86400)
+
+                if new_expire <= now:
+                    del g["premium_users"][uid]
+                else:
+                    g["premium_users"][uid]["expire"] = new_expire
+
+                groups_col.update_one(
+                    {"chat_id": g["chat_id"]},
+                    {"$set": g}
+                )
+
+                return await msg.reply_text("BERHASIL KURANG MASA AKTIF")
+
+
+#================= MAIN =================
+
+app = ApplicationBuilder().token(TOKEN).build()
+
+# utama
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("help", help_cmd))
+app.add_handler(CommandHandler("infobot", infobot))
+app.add_handler(CommandHandler("sewabot", sewabot))
+
+# target
+app.add_handler(CommandHandler("add", add))
+app.add_handler(CommandHandler("delete", delete))
+app.add_handler(CommandHandler("listusn", listusn))
+
+# user
+app.add_handler(CommandHandler("adduser", adduser))
+app.add_handler(CommandHandler("deluser", deluser))
+app.add_handler(CommandHandler("listuser", listuser))
+
+# text
+app.add_handler(CommandHandler("addtext", addtext))
+app.add_handler(CommandHandler("deltext", deltext))
+app.add_handler(CommandHandler("alltext", alltext))
+
+# filter
+app.add_handler(CommandHandler("filtertext", filtertext))
+app.add_handler(CommandHandler("filterfoto", filterfoto))
+app.add_handler(CommandHandler("deletepesan", deletepesan))
+
+# premium
+app.add_handler(CommandHandler("masaaktif", masaaktif))
+app.add_handler(CommandHandler("cekmasaaktif", cekmasaaktif))
+app.add_handler(CommandHandler("listpremium", listpremium))
+app.add_handler(CommandHandler("tambahmasaaktif", tambahmasaaktif))
+app.add_handler(CommandHandler("kurangmasaaktif", kurangmasaaktif))
+
+# auto delete
+app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
+
+print("BOT RUNNING...")
+app.run_polling(drop_pending_updates=True)
