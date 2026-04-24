@@ -3,7 +3,7 @@ import time
 import re
 import asyncio
 import logging
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from pymongo import MongoClient
 
@@ -153,126 +153,49 @@ async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "OVO : KOSONG\n"
             f"QRIS: PM {OWNER_USERNAME}\n\n"
 
-            f"•𝗨𝗗𝗔𝗛 𝗧𝗙?𝗞𝗜𝗥𝗜𝗠 𝗕𝗨𝗞𝗧𝗜 𝗞𝗘 {OWNER_USERNAME}\n"
+            f"•𝗨𝗗𝗔𝗛 𝗧𝗙? 𝗞𝗜𝗥𝗜𝗠 𝗕𝗨𝗞𝗧𝗜 𝗞𝗘 {OWNER_USERNAME}\n"
             "•𝗞𝗔𝗟𝗔𝗨 𝗕𝗘𝗟𝗨𝗠 𝗗𝗜 𝗥𝗘𝗦𝗣𝗢𝗡 𝗧𝗨𝗡𝗚𝗚𝗨 𝗦𝗘𝗕𝗘𝗡𝗧𝗔𝗥\n"
             "•𝗝𝗔𝗡𝗚𝗔𝗡 𝗟𝗨𝗣𝗔 𝗧𝗔𝗠𝗕𝗔𝗛𝗜𝗡 𝗕𝗢𝗧𝗡𝗬𝗔 𝗞𝗘 𝗚𝗥𝗨𝗣 𝗬𝗔𝗪 "
             "𝗞𝗔𝗦𝗜𝗛 𝗔𝗞𝗦𝗘𝗦 𝗔𝗣𝗨𝗡 𝗣𝗘𝗦𝗔𝗡/𝗔𝗞𝗦𝗘𝗦 𝗔𝗟𝗟🥰"
         )
 
-        return await msg.reply_text(text, parse_mode="Markdown")
+        return await msg.reply_text(
+            text,
+            parse_mode="Markdown"
+        )
 
     # ================= GROUP MODE =================
-    user = msg.from_user
-    group_id = str(msg.chat.id)
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "✅ KONFIRMASI PEMBAYARAN",
+                callback_data="confirm_sewa"
+            )
+        ]
+    ]
 
-    pending_sewa[str(user.id)] = {
-        "name": user.first_name.lower(),
-        "user_id": str(user.id),
-        "group_id": group_id
-    }
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-    owner_text = (
-        "📥 SEWA BARU MASUK\n\n"
-        f"NIK: {user.first_name}\n"
-        f"USERID: {user.id}\n"
-        f"IDGRUP: {group_id}\n"
-        "WAKTU: REQUEST\n\n"
-        "Ketik:\n"
-        f"/terima {user.id}\n"
-        f"/tolak {user.id}"
+    text = (
+        "𝗟𝗜𝗦𝗧 𝗛𝗔𝗥𝗚𝗔 𝗕𝗢𝗧 𝗞𝗜𝗡𝗚𝗭𝗔𝗔:\n"
+        "𝗣𝗘𝗥 𝗠𝗜𝗡𝗚𝗚𝗨 𝟱𝗞\n"
+        "𝗣𝗘𝗥 𝗕𝗨𝗟𝗔𝗡 𝟭𝟱𝗞\n\n"
+
+        "𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗞𝗜𝗡𝗚𝗭𝗔𝗔:\n"
+        "DANA: 08888604716\n"
+        "GOPAY: KOSONG\n"
+        "OVO : KOSONG\n"
+        f"QRIS: PM {OWNER_USERNAME}\n\n"
+
+        "Setelah transfer,\n"
+        "tekan tombol KONFIRMASI PEMBAYARAN di bawah 👇"
     )
-
-    await context.bot.send_message(
-        chat_id=OWNER_ID,
-        text=owner_text
-    )
-
-    await msg.reply_text("REQUEST SEWA BERHASIL DIKIRIM KE OWNER ✅")
-
-
-async def terima(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-
-    if msg.chat.type != "private":
-        return await msg.reply_text("PRIVATE ONLY")
-
-    if msg.from_user.id != OWNER_ID:
-        return
-
-    if len(context.args) < 1:
-        return await msg.reply_text("FORMAT: /terima userid")
-
-    uid = str(context.args[0])
-
-    if uid not in pending_sewa:
-        return await msg.reply_text("DATA SEWA TIDAK DITEMUKAN")
-
-    pending_sewa["waiting_days"] = uid
 
     await msg.reply_text(
-        "KIRIM JUMLAH HARI AKTIF\n"
-        "contoh: 7"
+        text,
+        reply_markup=reply_markup
     )
-
-
-async def tolak(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-
-    if msg.chat.type != "private":
-        return await msg.reply_text("PRIVATE ONLY")
-
-    if msg.from_user.id != OWNER_ID:
-        return
-
-    if len(context.args) < 1:
-        return await msg.reply_text("FORMAT: /tolak userid")
-
-    uid = str(context.args[0])
-
-    if uid in pending_sewa:
-        del pending_sewa[uid]
-
-    await msg.reply_text("SEWA DITOLAK ❌")
-
-
-async def owner_input_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-
-    if msg.chat.type != "private":
-        return
-
-    if msg.from_user.id != OWNER_ID:
-        return
-
-    if "waiting_days" not in pending_sewa:
-        return
-
-    if not msg.text.isdigit():
-        return
-
-    days = int(msg.text)
-    uid = pending_sewa["waiting_days"]
-
-    if uid not in pending_sewa:
-        return
-
-    data = pending_sewa[uid]
-    g = get_group(data["group_id"])
-
-    g["premium_users"][uid] = {
-        "name": data["name"],
-        "expire": time.time() + (days * 86400)
-    }
-
-    g["allowed_users"][uid] = data["name"]
-
-    save_group(g)
-
-    del pending_sewa[uid]
-    del pending_sewa["waiting_days"]
-
-    await msg.reply_text("BERHASIL DITAMBAHKAN KE LIST PREMIUM ✅")
-
+    
 async def infobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
