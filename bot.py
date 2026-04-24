@@ -133,6 +133,53 @@ async def success(msg, text):
     await clean_success(msg, bot_msg)
 
 # ================= COMMANDS =================
+async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+
+    # PRIVATE ONLY
+    if msg.chat.type != "private":
+        return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
+
+    text = (
+        "𝗟𝗜𝗦𝗧 𝗛𝗔𝗥𝗚𝗔 𝗕𝗢𝗧 𝗞𝗜𝗡𝗚𝗭𝗔𝗔:\n"
+        "𝗣𝗘𝗥 𝗠𝗜𝗡𝗚𝗚𝗨 𝟱𝗞\n"
+        "𝗣𝗘𝗥 𝗕𝗨𝗟𝗔𝗡 𝟭𝟱𝗞\n\n"
+
+        "𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗞𝗜𝗡𝗚𝗭𝗔𝗔:\n"
+        "DANA: 08888604716 AKBAR\n"
+        "GOPAY: KOSONG\n"
+        "OVO : KOSONG\n"
+        f"QRIS: PM {OWNER_USERNAME}\n\n"
+
+        f"•𝗨𝗗𝗔𝗛 𝗧𝗙? 𝗞𝗜𝗥𝗜𝗠 𝗕𝗨𝗞𝗧𝗜 𝗞𝗘 {OWNER_USERNAME}\n"
+        "•𝗞𝗔𝗟𝗔𝗨 𝗕𝗘𝗟𝗨𝗠 𝗗𝗜 𝗥𝗘𝗦𝗣𝗢𝗡 𝗧𝗨𝗡𝗚𝗚𝗨 𝗦𝗘𝗕𝗘𝗡𝗧𝗔𝗥 𝗬𝗔\n"
+        "•𝗝𝗔𝗡𝗚𝗔𝗡 𝗟𝗨𝗣𝗔 𝗧𝗔𝗠𝗕𝗔𝗛𝗜𝗡 𝗕𝗢𝗧 𝗞𝗘 𝗚𝗥𝗨𝗣"
+    )
+
+    await msg.reply_text(text)
+
+async def infobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+
+    # PRIVATE ONLY
+    if msg.chat.type != "private":
+        return await msg.reply_text("COMMAND INI HANYA BISA DI PRIVATE BOT")
+
+    text = (
+        "𝗔𝗟𝗟 𝗜𝗡𝗙𝗢 𝗕𝗢𝗧 𝗞𝗜𝗡𝗚𝗭𝗔:\n\n"
+
+        "𝙱𝙾𝚃 𝙸𝙽𝙸 𝙺𝙷𝚄𝚂𝚄𝚂 𝚄𝚃𝙰𝙼𝙰 𝙳𝚄𝙴𝙻𝙰𝙽+𝙺𝙰𝙽𝙶 𝙿𝚁𝙴𝙳 𝚈𝙰𝚆 𝙱𝚄𝙰𝚃 𝚈𝙶 𝚃𝙰𝙺𝚄𝚃 𝙰𝚂𝙸𝚂 𝙽𝚈𝙰 𝙶𝙰 𝚂𝙴𝙽𝙶𝙰𝙹𝙰 𝙰𝙿𝚄𝚂 𝙰𝙻𝙻 𝙿𝙴𝚂𝙰𝙽 𝙳𝙸 𝙶𝚁𝚄𝙿 𝚈𝙰𝚆\n\n"
+
+        "𝚂𝙸𝚂𝚃𝙴𝙼𝙽𝚈𝙰 𝙸𝚃𝚄 𝚃𝙰𝚁𝙶𝙴𝚃, 𝙺𝙰𝙻𝙰𝚄 𝙰𝙳𝙰 𝚄𝚂𝙴𝚁 𝚈𝙶 𝙳𝙸 𝚃𝙰𝙽𝙳𝙰𝙸𝙽 𝙽𝙶𝙸𝚁𝙸𝙼 𝙿𝙴𝚂𝙰𝙽 𝙰𝙿𝙰𝙿𝚄𝙽 𝙱𝙸𝚂𝙰 𝚃𝙴𝚇𝚃, 𝙵𝙾𝚃𝙾, 𝚂𝚃𝙸𝙺𝙴𝚁, 𝙶𝙸𝙵 𝙳𝙻𝙻 𝙱𝙸𝚂𝙰 𝙳𝙸 𝙷𝙰𝙿𝚄𝚂\n\n"
+
+        "𝙺𝙰𝙻𝙰𝚄 𝙼𝙰𝚄 𝙻𝙸𝙰𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳𝙽𝚈𝙰 𝙺𝙴𝚃𝙸𝙺 /help\n"
+        f"𝙿𝙼 {OWNER_USERNAME} 𝙹𝙸𝙺𝙰 𝙼𝙰𝚄 𝙱𝙴𝙻𝙸/𝙿𝙴𝚁𝚃𝙰𝙽𝚈𝙰𝙰𝙽\n\n"
+
+        "𝗠𝗜𝗡𝗔𝗧? 𝗦𝗨𝗡𝗚 𝗞𝗘𝗧𝗜𝗞 /sewabot"
+    )
+
+    await msg.reply_text(text)
+
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
@@ -577,6 +624,8 @@ app.add_handler(CommandHandler("listpremium", listpremium))
 
 app.add_handler(CommandHandler("help", help_cmd))
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("infobot", infobot))
+app.add_handler(CommandHandler("sewabot", sewabot))
 
 app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
 
