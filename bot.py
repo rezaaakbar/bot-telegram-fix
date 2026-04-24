@@ -219,7 +219,7 @@ async def sewa_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 callback_data=f"approve_{user.id}"
             ),
             InlineKeyboardButton(
-                "❌ TOLAK",)
+                "❌ TOLAK",
                 callback_data=f"reject_{user.id}"
             )
         ]
@@ -318,7 +318,7 @@ async def owner_input_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
     del pending_sewa[uid]
     del pending_sewa["waiting_days"]
 
-    await msg.reply_text(
+    await msg.reply_text
 
 async def infobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
