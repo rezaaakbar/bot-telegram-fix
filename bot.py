@@ -19,7 +19,7 @@ client = MongoClient(MONGO_URI)
 db = client["telegram_bot"]
 groups_col = db["groups"]
 
-================= RESPONSE =================
+#================= RESPONSE =================
 
 RESP = {
 "delete_on": "𝗢𝗧𝗪 𝗞𝗘𝗥𝗝𝗔 𝗕𝗢𝗦🚀",
