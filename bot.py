@@ -3,9 +3,18 @@ import time
 import re
 import asyncio
 import logging
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+
 from pymongo import MongoClient
+
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    filters
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -208,6 +217,58 @@ async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
+async def input_hari(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    user_id = str(msg.from_user.id)
+
+    if user_id not in pending_sewa:
+        return
+
+    if pending_sewa[user_id]["step"] != "input_hari":
+        return
+
+    days = int(msg.text)
+    chat_id = pending_sewa[user_id]["chat_id"]
+
+    g = get_group(chat_id)
+
+    expire = time.time() + (days * 86400)
+
+    g["premium_users"][user_id] = {
+        "name": msg.from_user.first_name.lower(),
+        "expire": expire
+    }
+
+    g["allowed_users"][user_id] = msg.from_user.first_name.lower()
+
+    save_group(g)
+
+    del pending_sewa[user_id]
+
+    await msg.reply_text(f"✅ BERHASIL AKTIF {days} HARI")
+
+async def confirm_sewa(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    user = query.from_user
+    chat_id = query.message.chat.id
+
+    keyboard = [
+        [
+            InlineKeyboardButton("TERIMA", callback_data=f"acc_{user.id}_{chat_id}"),
+            InlineKeyboardButton("TOLAK", callback_data=f"dec_{user.id}_{chat_id}")
+        ]
+    ]
+
+    await context.bot.send_message(
+        chat_id=OWNER_ID,
+        text=f"🔥 REQUEST SEWA MASUK\nUSER: {user.first_name}\nID: {user.id}",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+    await query.message.reply_text("📩 Bukti dikirim ke owner, tunggu konfirmasi")
+
 async def infobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
@@ -273,6 +334,34 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await msg.reply_text(text)
+
+pending_sewa = {}
+
+async def handle_admin_decision(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data.split("_")
+    action = data[0]
+    user_id = data[1]
+    chat_id = data[2]
+
+    if action == "acc":
+        pending_sewa[user_id] = {
+            "chat_id": chat_id,
+            "step": "input_hari"
+        }
+
+        await context.bot.send_message(
+            chat_id=OWNER_ID,
+            text="Kirim jumlah hari (contoh: 7 / 30)"
+        )
+
+    elif action == "dec":
+        await context.bot.send_message(
+            chat_id=int(chat_id),
+            text="❌ PEMBAYARAN DITOLAK OWNER"
+        )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -651,6 +740,9 @@ async def listpremium(update, context):
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(confirm_sewa, pattern="confirm_sewa"))
+app.add_handler(CallbackQueryHandler(handle_admin_decision, pattern="^(acc|dec)_"))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, input_hari))
 app.add_handler(CommandHandler("help", help_cmd))
 app.add_handler(CommandHandler("infobot", infobot))
 app.add_handler(CommandHandler("sewabot", sewabot))
