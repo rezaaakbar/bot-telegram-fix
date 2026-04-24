@@ -146,17 +146,17 @@ async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "𝗣𝗘𝗥 𝗕𝗨𝗟𝗔𝗡 𝟭𝟱𝗞\n\n"
 
         "𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗞𝗜𝗡𝗚𝗭𝗔𝗔:\n"
-        "DANA: 08888604716 AKBAR\n"
+        "DANA: `08888604716`\n"
         "GOPAY: KOSONG\n"
         "OVO : KOSONG\n"
         f"QRIS: PM {OWNER_USERNAME}\n\n"
 
         f"•𝗨𝗗𝗔𝗛 𝗧𝗙? 𝗞𝗜𝗥𝗜𝗠 𝗕𝗨𝗞𝗧𝗜 𝗞𝗘 {OWNER_USERNAME}\n"
-        "•𝗞𝗔𝗟𝗔𝗨 𝗕𝗘𝗟𝗨𝗠 𝗗𝗜 𝗥𝗘𝗦𝗣𝗢𝗡 𝗧𝗨𝗡𝗚𝗚𝗨 𝗦𝗘𝗕𝗘𝗡𝗧𝗔𝗥 𝗬𝗔\n"
-        "•𝗝𝗔𝗡𝗚𝗔𝗡 𝗟𝗨𝗣𝗔 𝗧𝗔𝗠𝗕𝗔𝗛𝗜𝗡 𝗕𝗢𝗧 𝗞𝗘 𝗚𝗥𝗨𝗣"
+        "•𝗞𝗔𝗟𝗔𝗨 𝗕𝗘𝗟𝗨𝗠 𝗗𝗜 𝗥𝗘𝗦𝗣𝗢𝗡 𝗧𝗨𝗡𝗚𝗚𝗨 𝗦𝗘𝗕𝗘𝗡𝗧𝗔𝗥\n"
+        "•𝗝𝗔𝗡𝗚𝗔𝗡 𝗟𝗨𝗣𝗔 𝗔𝗞𝗦𝗘𝗦 𝗕𝗢𝗧 𝗞𝗘 𝗚𝗥𝗨𝗣"
     )
 
-    await msg.reply_text(text)
+    await msg.reply_text(text, parse_mode="Markdown")
 
 async def infobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
