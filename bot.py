@@ -90,7 +90,7 @@ def clean_expired(g):
 def shutdown(g, user_id=None):
     # OWNER selalu bisa bypass
         if user_id == OWNER_ID:
-        return False
+            return False
 
     now = time.time()
 
