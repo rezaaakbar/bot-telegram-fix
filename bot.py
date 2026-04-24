@@ -88,12 +88,11 @@ def clean_expired(g):
     save_group(g)
 
 def shutdown(g, user_id=None):
-    # OWNER selalu bisa bypass
-        if user_id == OWNER_ID:
-            return False
+    # OWNER bypass shutdown
+    if user_id == OWNER_ID:
+        return False
 
-        now = time.time()
-
+    now = time.time()
     premium_users = g.get("premium_users", {})
 
     if not premium_users:
@@ -106,7 +105,7 @@ def shutdown(g, user_id=None):
             return False
 
     return True
-
+    
 def is_allowed(uid, g):
     return uid == OWNER_ID or str(uid) in g.get("allowed_users", {})
 
