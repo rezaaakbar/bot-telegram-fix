@@ -219,7 +219,7 @@ async def sewa_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 callback_data=f"approve_{user.id}"
             ),
             InlineKeyboardButton(
-                "❌ TOLAK",
+                "❌ TOLAK",)
                 callback_data=f"reject_{user.id}"
             )
         ]
