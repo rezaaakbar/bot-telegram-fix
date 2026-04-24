@@ -87,11 +87,24 @@ def clean_expired(g):
 
     save_group(g)
 
-def shutdown(g):
+def shutdown(g, user_id=None):
+    # OWNER selalu bisa bypass
+    if user_id == OWNER_ID:
+        return False
+
     now = time.time()
-    for _, d in g.get("premium_users", {}).items():
-        if d["expire"] > now or d["expire"] == -1:
+
+    premium_users = g.get("premium_users", {})
+
+    if not premium_users:
+        return True
+
+    for _, data in premium_users.items():
+        exp = data.get("expire", 0)
+
+        if exp == -1 or exp > now:
             return False
+
     return True
 
 def is_allowed(uid, g):
@@ -111,9 +124,9 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         g = get_group(msg.chat.id)
         clean_expired(g)
 
-        if shutdown(g):
-            return
-
+        if shutdown(g, msg.from_user.id):
+    return
+    
         if g.get("delete_on") and str(msg.from_user.id) in g["targets"]:
             await msg.delete()
 
