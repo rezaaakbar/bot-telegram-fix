@@ -763,6 +763,9 @@ async def kurangmasaaktif(update, context):
 
 app = ApplicationBuilder().token(TOKEN).build()
 
+app.add_handler(CallbackQueryHandler(confirm_sewa_handler, pattern="^confirm_sewa$"))
+app.add_handler(CallbackQueryHandler(approve_sewa_handler, pattern="^approve_"))
+
 # utama
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("help", help_cmd))
@@ -797,8 +800,6 @@ app.add_handler(CommandHandler("tambahmasaaktif", tambahmasaaktif))
 app.add_handler(CommandHandler("kurangmasaaktif", kurangmasaaktif))
 
 # auto delete
-app.add_handler(CallbackQueryHandler(confirm_sewa_handler, pattern="^confirm_sewa$"))
-app.add_handler(CallbackQueryHandler(approve_sewa_handler, pattern="^approve_"))
 app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
 
 print("BOT RUNNING...")
