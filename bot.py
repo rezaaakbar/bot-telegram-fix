@@ -4,6 +4,7 @@ import re
 import asyncio
 import logging
 
+from telegram.ext import CallbackQueryHandler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -234,6 +235,21 @@ async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await msg.reply_text(text, reply_markup=reply_markup)
+
+async def confirm_sewa_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    user = query.from_user
+
+    text = (
+        "✅ KONFIRMASI DITERIMA\n\n"
+        f"USER: {user.first_name}\n"
+        f"ID: {user.id}\n\n"
+        f"Silakan kirim bukti transfer ke {OWNER_USERNAME}"
+    )
+
+    await query.edit_message_text(text)
 
 
 #================= INFOBOT =================
@@ -714,6 +730,7 @@ app.add_handler(CommandHandler("tambahmasaaktif", tambahmasaaktif))
 app.add_handler(CommandHandler("kurangmasaaktif", kurangmasaaktif))
 
 # auto delete
+app.add_handler(CallbackQueryHandler(confirm_sewa_handler, pattern="confirm_sewa"))
 app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
 
 print("BOT RUNNING...")
