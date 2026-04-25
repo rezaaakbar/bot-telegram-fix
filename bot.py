@@ -171,6 +171,8 @@ async def auto_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def success(msg, text):
     bot_msg = await msg.reply_text(text)
     await clean_success(msg, bot_msg)
+
+pending_confirm = {}
     #================= COMMANDS UTAMA =================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -236,20 +238,58 @@ async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text, reply_markup=reply_markup)
 
+
 async def confirm_sewa_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     user = query.from_user
 
-    text = (
-        "✅ KONFIRMASI DITERIMA\n\n"
-        f"USER: {user.first_name}\n"
-        f"ID: {user.id}\n\n"
-        f"Silakan kirim bukti transfer ke {OWNER_USERNAME}"
+    # simpan pending
+    pending_confirm[user.id] = True
+
+    # ubah pesan jadi "tunggu"
+    await query.edit_message_text("⏳ KONFIRMASI DIKIRIM, TUNGGU SEBENTAR...")
+
+    # kirim ke owner + tombol approve
+    keyboard = [
+        [InlineKeyboardButton("✅ TERIMA", callback_data=f"approve_{user.id}")]
+    ]
+
+    await context.bot.send_message(
+        chat_id=OWNER_ID,
+        text=(
+            "📥 REQUEST SEWA MASUK\n\n"
+            f"Nama: {user.first_name}\n"
+            f"ID: {user.id}"
+        ),
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-    await query.edit_message_text(text)
+async def approve_sewa_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    # ambil user id dari tombol
+    uid = query.data.split("_")[1]
+
+    if int(query.from_user.id) != OWNER_ID:
+        return await query.answer("Bukan owner", show_alert=True)
+
+    if int(uid) not in pending_confirm:
+        return await query.answer("Data tidak ditemukan", show_alert=True)
+
+    # hapus dari pending
+    del pending_confirm[int(uid)]
+
+    # edit pesan owner
+    await query.edit_message_text("✅ PEMBAYARAN DITERIMA")
+
+    # kirim ke user
+    await context.bot.send_message(
+        chat_id=int(uid),
+        text="✅ PEMBAYARAN BERHASIL DITERIMA\n\nBOT SUDAH AKTIF 🔥"
+    )
 
 
 #================= INFOBOT =================
@@ -730,6 +770,8 @@ app.add_handler(CommandHandler("tambahmasaaktif", tambahmasaaktif))
 app.add_handler(CommandHandler("kurangmasaaktif", kurangmasaaktif))
 
 # auto delete
+app.add_handler(CallbackQueryHandler(confirm_sewa_handler, pattern="confirm_sewa"))
+app.add_handler(CallbackQueryHandler(approve_sewa_handler, pattern="approve_"))
 app.add_handler(CallbackQueryHandler(confirm_sewa_handler, pattern="confirm_sewa"))
 app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
 
