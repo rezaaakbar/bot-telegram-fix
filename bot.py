@@ -240,57 +240,79 @@ async def sewabot(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await msg.reply_text(text, reply_markup=reply_markup)
 
-
 async def confirm_sewa_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+    try:
+        print("KEPENCET CONFIRM")  # debug
 
-    user = query.from_user
+        query = update.callback_query
+        if not query:
+            return
 
-    # simpan ke pending
-    pending_confirm[user.id] = True
+        await query.answer()
 
-    # ubah pesan jadi tunggu
-    await query.edit_message_text("⏳ KONFIRMASI DIKIRIM, TUNGGU SEBENTAR...")
+        user = query.from_user
 
-    # tombol untuk owner
-    keyboard = [
-        [InlineKeyboardButton("✅ TERIMA", callback_data=f"approve_{user.id}")]
-    ]
+        # anti spam klik
+        if user.id in pending_confirm:
+            return await query.answer("SUDAH DIKIRIM, TUNGGU", show_alert=True)
 
-    await context.bot.send_message(
-        chat_id=OWNER_ID,
-        text=(
-            "📥 REQUEST SEWA MASUK\n\n"
-            f"Nama: {user.first_name}\n"
-            f"ID: {user.id}"
-        ),
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+        # simpan ke pending
+        pending_confirm[user.id] = True
+
+        # ubah pesan jadi tunggu
+        await query.edit_message_text("⏳ KONFIRMASI DIKIRIM, TUNGGU SEBENTAR...")
+
+        # kirim ke owner
+        keyboard = [
+            [InlineKeyboardButton("✅ TERIMA", callback_data=f"approve_{user.id}")]
+        ]
+
+        await context.bot.send_message(
+            chat_id=OWNER_ID,
+            text=(
+                "📥 REQUEST SEWA MASUK\n\n"
+                f"Nama: {user.first_name}\n"
+                f"ID: {user.id}"
+            ),
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    except Exception as e:
+        print("ERROR CONFIRM:", e)
 
 async def approve_sewa_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+    try:
+        print("KEPENCET APPROVE")  # debug
 
-    if query.from_user.id != OWNER_ID:
-        return await query.answer("Bukan owner", show_alert=True)
+        query = update.callback_query
+        if not query:
+            return
 
-    uid = int(query.data.split("_")[1])
+        await query.answer()
 
-    if uid not in pending_confirm:
-        return await query.answer("Data tidak ditemukan", show_alert=True)
+        # hanya owner
+        if query.from_user.id != OWNER_ID:
+            return await query.answer("Bukan owner", show_alert=True)
 
-    # hapus dari pending
-    del pending_confirm[uid]
+        uid = int(query.data.split("_")[1])
 
-    # edit pesan owner
-    await query.edit_message_text("✅ PEMBAYARAN DITERIMA")
+        if uid not in pending_confirm:
+            return await query.answer("DATA TIDAK ADA", show_alert=True)
 
-    # kirim ke user
-    await context.bot.send_message(
-        chat_id=uid,
-        text="✅ PEMBAYARAN BERHASIL DITERIMA\n\nBOT SUDAH AKTIF 🔥"
-    )
+        # hapus dari pending
+        del pending_confirm[uid]
+
+        # edit pesan owner
+        await query.edit_message_text("✅ PEMBAYARAN DITERIMA")
+
+        # kirim ke user
+        await context.bot.send_message(
+            chat_id=uid,
+            text="✅ PEMBAYARAN BERHASIL DITERIMA\n\nBOT SUDAH AKTIF 🔥"
+        )
+
+    except Exception as e:
+        print("ERROR APPROVE:", e)
 
 
 #================= INFOBOT =================
