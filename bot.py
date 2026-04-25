@@ -172,7 +172,9 @@ async def success(msg, text):
     bot_msg = await msg.reply_text(text)
     await clean_success(msg, bot_msg)
 
+# GLOBAL (WAJIB DI LUAR FUNCTION)
 pending_confirm = {}
+
     #================= COMMANDS UTAMA =================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -245,13 +247,13 @@ async def confirm_sewa_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
     user = query.from_user
 
-    # simpan pending
+    # simpan ke pending
     pending_confirm[user.id] = True
 
-    # ubah pesan jadi "tunggu"
+    # ubah pesan jadi tunggu
     await query.edit_message_text("⏳ KONFIRMASI DIKIRIM, TUNGGU SEBENTAR...")
 
-    # kirim ke owner + tombol approve
+    # tombol untuk owner
     keyboard = [
         [InlineKeyboardButton("✅ TERIMA", callback_data=f"approve_{user.id}")]
     ]
@@ -270,24 +272,23 @@ async def approve_sewa_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.callback_query
     await query.answer()
 
-    # ambil user id dari tombol
-    uid = query.data.split("_")[1]
-
-    if int(query.from_user.id) != OWNER_ID:
+    if query.from_user.id != OWNER_ID:
         return await query.answer("Bukan owner", show_alert=True)
 
-    if int(uid) not in pending_confirm:
+    uid = int(query.data.split("_")[1])
+
+    if uid not in pending_confirm:
         return await query.answer("Data tidak ditemukan", show_alert=True)
 
     # hapus dari pending
-    del pending_confirm[int(uid)]
+    del pending_confirm[uid]
 
     # edit pesan owner
     await query.edit_message_text("✅ PEMBAYARAN DITERIMA")
 
     # kirim ke user
     await context.bot.send_message(
-        chat_id=int(uid),
+        chat_id=uid,
         text="✅ PEMBAYARAN BERHASIL DITERIMA\n\nBOT SUDAH AKTIF 🔥"
     )
 
@@ -770,9 +771,8 @@ app.add_handler(CommandHandler("tambahmasaaktif", tambahmasaaktif))
 app.add_handler(CommandHandler("kurangmasaaktif", kurangmasaaktif))
 
 # auto delete
-app.add_handler(CallbackQueryHandler(confirm_sewa_handler, pattern="confirm_sewa"))
-app.add_handler(CallbackQueryHandler(approve_sewa_handler, pattern="approve_"))
-app.add_handler(CallbackQueryHandler(confirm_sewa_handler, pattern="confirm_sewa"))
+app.add_handler(CallbackQueryHandler(confirm_sewa_handler, pattern="^confirm_sewa$"))
+app.add_handler(CallbackQueryHandler(approve_sewa_handler, pattern="^approve_"))
 app.add_handler(MessageHandler(~filters.COMMAND, auto_delete))
 
 print("BOT RUNNING...")
